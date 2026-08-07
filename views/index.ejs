@@ -115,13 +115,9 @@
         method: "POST",
         body: new URLSearchParams(pidFD)
       })
-      if(!pidChk.ok){
-        alertMsgEl.textContent=`エラーが発生しました。(HTTP ${pidChk.status})`;
-        alertMsgEl.style.display="";
-        return
-      }
       const chkRes = await pidChk.json();
 
+      // ログイン済み=OK
       if (chkRes.resType == "Error") {
         console.log("PID Check: " + chkRes.errMsg);
         document.getElementById("loadSpin").style.display = "none";
@@ -157,6 +153,7 @@
       if(!response.ok){
         alertMsgEl.textContent=`エラーが発生しました。(HTTP ${response.status})`;
         alertMsgEl.style.display="";
+        return
       }
       const res = await response.json();
       if (res.resType == "OK") {

@@ -180,12 +180,11 @@
     const pvpBtn = document.getElementById("pvp");
     const nameDisplay = document.getElementById("displayName");
 
-    
-
     window.addEventListener("DOMContentLoaded", async () => {
       const playerId = localStorage.getItem("pid") ?? undefined;
       if (!playerId){
-        return location.href="/";
+        location.href="/";
+        return
       }
       let pidFD = new FormData();
       pidFD.append("playerId", playerId);
@@ -194,10 +193,6 @@
         method: "POST",
         body: new URLSearchParams(pidFD)
       })
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
       const chkRes = await response.json();
 
       if (chkRes.resType == "Error") {
