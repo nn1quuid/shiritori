@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@100..900&family=Ubuntu+Sans:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+  <title>しりとり | CPU対戦</title>
+  <style>
+    body{
+      font-family: "ubuntu sans", "m plus 1", sans-serif;
+    }
+    hr{
+      margin-top: 0.25rem;
+      margin-bottom: 0.5rem;
+    }
+    .bnto-hr-gradient {
+      height: 100%; border: none;
+      color: white;
+      background: linear-gradient(90deg,
+        transparent, hsl(169, 63%, 22%), transparent);
+    }
+
+    #main{
+      max-width: 30rem;
+    }
+    
+    .bnto-user{
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      z-index: 1000;
+
+      --c1: #318bf2; --dur: .15s;
+      display: inline-block;
+    }
+    /* 丸アバターボタン */
+    .bnto-user-btn {
+      width: 46px; height: 46px; border-radius: 50%;
+      border: 3px solid #fff;
+      background: var(--c1); color: #fff;
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; box-shadow: 0 5px 14px rgba(0,0,0,.16);
+    }
+    .bnto-user-menu {
+      position: absolute; top: calc(100% + 10px); right: 0;
+      min-width: 200px; z-index: 5;
+      background: #fff; border: 2px solid #DFE9F1;
+      border-radius: 12px; padding: 6px;
+      box-shadow: 0 12px 28px rgba(0,0,0,.12);
+      opacity: 0; visibility: hidden; transform: translateY(-6px);
+      transition: opacity var(--dur), transform var(--dur), visibility var(--dur);
+    }
+    .bnto-user.is-open .bnto-user-menu { opacity: 1; visibility: visible; transform: none; }
+    /* ユーザー情報ヘッダー */
+    .bnto-user-menu .who {
+      padding: 8px 12px 10px;
+      border-bottom: 2px dashed #DFE9F1; margin-bottom: 4px;
+    }
+    .bnto-user-menu .who b { display: block; }
+    .bnto-user-menu .who span { font-size: 11px; color: #9a948a; }
+    .bnto-user-menu a {
+      display: flex; align-items: center; gap: 9px;
+      padding: 9px 12px; border-radius: 8px;
+      color: inherit; text-decoration: none; font-weight: 700;
+    }
+    .bnto-user-menu a:hover { background: #EAF2F8; }
+    .bnto-user-menu .sep { border-top: 2px dashed #DFE9F1; margin: 4px 0; }
+    .bnto-user-menu .out { color: hsl(4 75% 52%); }
+    .bnto-user-menu .out:hover { background: hsl(4 75% 96%); }
+
+    /* History */
+    #history-btn{
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+    }
+    #srtr-history{
+      position: absolute;
+      background-color: #fafafa;
+      top: 5rem; left:-50rem;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <h1 class="text-center bnto-hr-gradient">CPU対戦</h1>
+    <div class="bnto-user" data-bnto-usermenu>
+      <button type="button" class="bnto-user-btn" aria-label="ユーザーメニュー">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </button>
+      <div class="bnto-user-menu">
+        <div class="who"><b id="who"></b><span id="whoid"></span></div>
+        <a href="/settings/profile">プロフィール</a>
+        <a href="/status">ステータス</a>
+        <div class="sep" role="separator"></div>
+        <a href="/logout" class="out">ログアウト</a>
+      </div>
+    </div>
+
+    <div id="history-btn">
+      <button class="btn btn-primary border rounded-pill">履歴</button>
+    </div>
+    <div id="srtr-history" class="border border-2 border-info rounded-5 px-5 py-3 text-center">
+      <h4>履歴</h4><hr>
+      <div id="history-words">
+        
+      </div>
+    </div>
+    
+    <div class="d-flex flex-column align-items-center">
+      <div class="alert alert-danger" id="login" style="display: none;">始める前に<a href="/" id="loginLink">ログイン</a>してください</div>
+      <% if(navType=="info" && nav) { %>
+        <div class="alert alert-info" id="infoBox"><%= nav %></div>
+      <% } else if (navType == "warn" && nav) { %>
+        <div class="alert alert-warning" id="infoBox"><%= nav %></div>
+      <% } else if(navType=="error" && nav) { %>
+        <div class="alert alert-danger" id="infoBox"><%= nav %></div>
+      <% } else if(navType=="win" && nav) { %>
+        <div class="alert alert-success" id="infoBox"><%= nav %></div>
+      <% } %>
+      <div class="text-center px-5 py-3 my-2 border border-3 border-info rounded-pill" id="main">
+        <span id="turn"><%= turn %></span>ターン目<hr>
+        <span class="fw-bold fs-4"><%= word %></span><br>
+        ↓↓↓
+        <form action="/cpu" method="POST" id="form">
+          <input id="pid" name="playerId" value="" type="hidden">
+          <input id="userword" class="my-2" type="text" name="word" placeholder="単語" autofocus autocomplete="off" maxlength="25"><br>
+          <button id="submitBtn" class="btn btn-primary" type="submit" disabled>送信 [Enter]</button>
+        </form>
+      </div>
+      <button class="btn btn-danger mt-lg-5" onclick="restart(this)">はじめから</button>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+    crossorigin="anonymous"></script>
+  <script>
+    let wordEl=document.getElementById("userword");
+    document.getElementById("form").addEventListener("submit", (e)=>{
+      document.getElementById("submitBtn").disabled=true;
+      if(wordEl.value.length>25){
+        document.getElementById("login").textContent="単語が長すぎます！";
+        document.getElementById("login").style.display="";
+        wordEl.value="";
+        e.preventDefault();
+        document.getElementById("submitBtn").disabled=false;
+      }
+    })
+    let attempt=0;
+    function restart(e){
+      attempt++;
+      if(attempt==1){
+        e.innerText="本当に初期化してよろしいですか？";
+        document.getElementById("userword").focus();
+      } else if(attempt==2){
+        location.href="/init?pid="+localStorage.getItem("pid");
+      }
+    }
+    async function getUserData(){
+      let pidFD = new FormData();
+      pidFD.append("playerId", localStorage.getItem("pid"));
+      const pidChk = await fetch("/pidchk", {
+        method: "POST",
+        body: new URLSearchParams(pidFD)
+      })
+
+      const chkRes = await pidChk.json();
+
+      if (chkRes.resType == "Error") {
+        console.log("PID Check: " + chkRes.errMsg);
+        document.getElementById("login").style.display="";
+        document.getElementById("loginLink").focus();
+        //document.getElementById("infoBox").style.display="none";
+        document.getElementById("submitBtn").disabled=true;
+        document.getElementById("userword").disabled=true;
+      } else if (chkRes.resType == "OK") {
+          document.getElementById("who").innerText=chkRes.username;
+          document.getElementById("whoid").innerText="@"+chkRes.pid;
+          document.getElementById("pid").value=chkRes.pid;
+          document.getElementById("submitBtn").disabled=false;
+          
+          const userMenu = document.querySelector(".bnto-user");
+          let theme=chkRes.player.themeColor;
+          userMenu.style.setProperty("--c1", theme);
+
+      }
+    }
+    window.addEventListener("DOMContentLoaded", async ()=>{
+      await getUserData();
+    });
+    const nt="<%= navType %>"
+    if(nt=="error"){
+      document.getElementById("submitBtn").disabled=true;
+      document.getElementById("userword").disabled=true;
+    } else if (nt == "win"){
+      document.getElementById("submitBtn").disabled=true;
+      document.getElementById("userword").disabled=true;
+    }
+    
+  </script>
+  <script>
+    // history btn
+    const btn=document.getElementById("history-btn");
+    const srtrEl=document.getElementById("srtr-history");
+    const historyEl=document.getElementById("history-words");
+    btn.addEventListener("click", async ()=>{
+      srtrEl.style.left = srtrEl.style.left == "1rem" ? "-50rem" : "1rem";
+      if(historyEl.innerText==""){
+        historyEl.innerText="読み込み中……";
+        const fd=new FormData();
+        fd.append("pid", localStorage.getItem("pid"));
+        fd.append("turn", document.getElementById("turn").innerText);
+        const res=await fetch("/api/history", {
+          method:"POST",
+          body: new URLSearchParams(fd)
+        })
+        const result=await res.json();
+        if(result.resType=="error"){
+          historyEl.innerText="読み込みに失敗しました";
+          return
+        } else if (result.history.length==0){
+          historyEl.innerText="まだ履歴がないようです。"
+          return
+        }
+        historyEl.innerHTML=result.history;
+        console.log(result);
+      }
+    })
+  </script>
+  <script>
+    // ユーザーメニュー：項目クリックでも閉じる
+    (function () {
+      document.querySelectorAll('[data-bnto-usermenu]').forEach(function (um) {
+        if (um.dataset.bntoInit) return;
+        um.dataset.bntoInit = '1';
+        var btn = um.querySelector('.bnto-user-btn');
+        btn.setAttribute('aria-haspopup', 'true');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.addEventListener('click', function () {
+          var open = um.classList.toggle('is-open');
+          btn.setAttribute('aria-expanded', open);
+        });
+        um.querySelectorAll('.bnto-user-menu a').forEach(function (item) {
+          item.addEventListener('click', function () {
+            um.classList.remove('is-open');
+            btn.setAttribute('aria-expanded', 'false');
+          });
+        });
+      });
+      // 外側クリック / Esc で閉じる（documentへの登録は1回だけ）
+      if (document.documentElement.dataset.bntoUserDoc) return;
+      document.documentElement.dataset.bntoUserDoc = '1';
+      function closeAll(except) {
+        document.querySelectorAll('[data-bnto-usermenu].is-open').forEach(function (um) {
+          if (um === except) return;
+          um.classList.remove('is-open');
+          um.querySelector('.bnto-user-btn').setAttribute('aria-expanded', 'false');
+        });
+      }
+      document.addEventListener('click', function (e) {
+        closeAll(e.target.closest('[data-bnto-usermenu]'));
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeAll(null);
+      });
+    })();
+  </script>
+</body>
+</html>

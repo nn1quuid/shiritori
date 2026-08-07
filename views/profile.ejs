@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@100..900&family=Ubuntu+Sans:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  <title>プロフィール設定</title>
+  <style>
+    body{
+      font-family: "ubuntu sans", "m plus 1", sans-serif;
+    }
+    th{
+      text-align: center;
+      padding-right: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="d-flex flex-column align-items-center mt-3">
+    <div class="h2">プロフィール設定</div>
+    <hr>
+    <% if (display) { %>
+      <% if (alert=="success") { %>
+        <div class="alert alert-success">変更は正常に保存されました。</div>
+      <% } else if (alert=="danger") { %>
+        <div class="alert alert-danger">保存に失敗しました。</div>
+      <% } %>
+    <% } %>
+    <div>
+      <form action="/settings/profile" method="post">
+        <table class="table">
+          <tr>
+            <th>ユーザーネーム<br>（表示名）</th>
+            <td><input type="text" id="displayName" name="displayName" disabled></td>
+          </tr>
+          <tr>
+            <th>テーマカラー<br><span id="sample">[サンプル]</span></th>
+            <td>
+              <select name="theme" id="select">
+                <option value="none">現在の設定を維持</option>
+                <option value="red">Red</option>
+                <option value="orange">Orange</option>
+                <option value="yellow">Yellow</option>
+                <option value="lime">Lime</option>
+                <option value="green">Green</option>
+                <option value="teal">Teal</option>
+                <option value="cyan">Cyan</option>
+                <option value="blue">Blue</option>
+                <option value="purple">Purple</option>
+                <option value="magenta">Magenta</option>
+                <option value="black">Black</option>
+              </select>
+            </td>
+          </tr>
+        </table>
+        <div class="text-center">
+          <button class="btn btn-success mt-3 mb-5">保存</button>
+        </div>
+        <input type="hidden" name="pid" id="pid">
+      </form>
+    </div>
+    <a href="/main" class="text-center">トップへ戻る</a>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+    crossorigin="anonymous"></script>
+  <script>
+    const pid=localStorage.getItem("pid");
+    window.addEventListener("DOMContentLoaded", async ()=>{
+      const fd=new FormData();
+      fd.append("playerId", pid);
+      const res=await fetch("/pidchk", {
+        method:"POST",
+        body: new URLSearchParams(fd)
+      })
+      const response=await res.json();
+      if(response.resType=="Error"){
+        return location.href="/";
+      }
+      const player=response.player;
+      document.getElementById("displayName").value=player.displayName;
+      document.getElementById("pid").value=pid;
+    })
+
+    const select=document.getElementById("select");
+    const options=document.querySelectorAll("#select option");
+    select.addEventListener("change", function(){
+      const index=this.selectedIndex;
+      document.getElementById("sample").style.color=options[index].value
+    })
+    
+  </script>
+</body>
+</html>

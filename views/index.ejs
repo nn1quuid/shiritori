@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>しりとりゲーム</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@100..900&family=Ubuntu+Sans:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: "ubuntu sans", "M PLUS 1", sans-serif;
+      letter-spacing: 0.05rem;
+    }
+
+    .bnto-head-sideline {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .bnto-head-sideline::before,
+    .bnto-head-sideline::after {
+      content: "";
+      flex: 1;
+      height: 2px;
+      border-radius: 2px;
+      background: hsl(30 12% 15%);
+    }
+
+    #alertBox {
+      text-align: center;
+      max-width: 30em;
+    }
+
+    .bnto-hr-label {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .bnto-hr-label::before,
+    .bnto-hr-label::after {
+      content: "";
+      flex: 1;
+      height: 2px;
+      background: #0d6efd;
+    }
+  </style>
+</head>
+
+<body>
+  <h1 class="bnto-head-sideline mt-3 mb-5">しりとり</h1>
+  <div class="modal" id="startModal">
+    <div class="modal-dialog modal-dialog-centered" aria-hidden="true">
+      <div class="modal-content text-center">
+        <div class="modal-header">
+          <div class="modal-title text-success w-100 fs-3">
+            準備が整いました！
+          </div>
+        </div>
+        <div class="modal-body">
+          <span id="displayName"></span> さん、しりとりを始めましょう！<br><hr>
+          <div class="h3 mb-2">ルール</div>
+          最後の文字が、<br>
+          伸ばし棒の時は、直前の文字の母音から続けます。<br>
+          小さい文字の時は、大きくします。<br>
+          たとえば、<br>
+          「かれー」の次は「え」から始まる単語です。<br>
+          「かいしゃ」の次は「や」から始まる単語です。<br>
+          <button class="btn btn-success rounded-pill px-3 my-3" id="gameBtn" autofocus
+            disabled>ゲームスタート</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <form action="/new/user" method="POST" id="form">
+    <div class="d-flex flex-column align-items-center">
+
+      <div>
+        ユーザーネーム:&emsp;
+        <input type="text" name="username" id="username" maxlength="12" autocomplete="off">
+      </div>
+
+      <div id="alertBox" class="mt-3">
+        <div class="alert alert-danger mb-0" style="display: none;" id="alert" role="alert">
+          <span id="alertMsg">ユーザーネームを入力してください</span>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <button class="btn btn-primary rounded-pill px-3" type="submit" id="startBtn" disabled>
+          <span class="spinner-border spinner-border-sm" aria-hidden="true" id="loadSpin"></span>
+          <span id="loadText">はじめる</span>
+        </button>
+      </div>
+
+    </div>
+  </form>
+
+  <div class="text-center mt-5">
+    <div class="bnto-hr-label h2">注意事項</div>
+    <div class="lh-lg mx-5">
+      ユーザーネーム および しりとりゲーム中に個人情報（住所、電話番号など）を入力しないでください。<br>
+      ユーザーネームは、サーバーに一時保存されています。<br>
+      ユーザーネームは、本名よりもニックネームやハンドルネームなどをおすすめします。<br>
+      サーバーの再起動やゲームの初期化などにより、記録が消える場合があります。<br>
+      そのため、ゲームデータの永続保存は保証しておりません。<br>
+      できるだけ、「存在する単語」でしりとりを楽しみましょう。<br>
+      なお、不具合を発見した場合は、ぜひお知らせください。
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+    crossorigin="anonymous"></script>
+  <script>
+    // elements
+    const startModal = new bootstrap.Modal(document.getElementById('startModal'));
+    const gameBtn=document.getElementById("gameBtn");
+    const form = document.getElementById("form");
+    const nameBox = document.getElementById("username");
+    const alertMsgEl = document.getElementById("alert");
+    const nameDisplay = document.getElementById("displayName");
+
+    const playerId = localStorage.getItem("pid") ?? undefined;
+    const startBtn = document.getElementById("startBtn");
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      let pidFD = new FormData();
+      pidFD.append("playerId", playerId);
+      const pidChk = await fetch("/pidchk", {
+        method: "POST",
+        body: new URLSearchParams(pidFD)
+      })
+
+      const chkRes = await pidChk.json();
+
+      if (chkRes.resType == "Error") {
+        console.log("PID Check: " + chkRes.errMsg);
+        document.getElementById("loadSpin").style.display = "none";
+        startBtn.disabled=false;
+      } else if (chkRes.resType == "OK") {
+        nameDisplay.innerText = chkRes.username;
+        location.href="/main";
+      }
+    })
+
+    nameBox.focus();
+
+    nameBox.addEventListener("input", () => {
+      document.getElementById("alert").style.display = "none";
+    })
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (nameBox.value == "") {
+        alertMsgEl.innerText = "ユーザーネームを入力してください";
+        return alertMsgEl.style.display = "";
+      }
+      startBtn.disabled = true;
+      nameBox.readOnly = true;
+      document.getElementById("loadText").innerText = "しばらくお待ちください";
+      document.getElementById("loadSpin").style.display = "";
+
+      const response = await fetch(form.action, {
+        method: form.method,
+        body: new URLSearchParams(new FormData(form))
+      });
+      const res = await response.json();
+      if (res.resType == "OK") {
+        nameDisplay.innerText = res.displayName;
+        localStorage.setItem("pid", res.pid);
+        location.href="/main";
+        //startModal.show();
+        gameBtn.onclick = () => {
+          location.href = `/cpu?pid=${res.pid}`;
+        };
+
+        gameBtn.disabled = false;
+        gameBtn.focus();
+      } else {
+        alertMsgEl.innerText = res.errMsg;
+        alertMsgEl.style.display = "";
+        startBtn.disabled = false;
+        nameBox.readOnly = false;
+        document.getElementById("loadText").innerText = "はじめる";
+        document.getElementById("loadSpin").style.display = "none";
+        nameBox.value = "";
+      }
+    })
+  </script>
+</body>
+
+</html>
