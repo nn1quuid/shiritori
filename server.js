@@ -47,16 +47,10 @@ const oks = [..."おこそとのほもよろをごぞどぼぽぉょ"];
 function makePlayerId(username) {
     const unixHex = utils.getUnix().hex;
     let usernameArray = [...username];
-    let pid = "";
-
     const playersCount = state.playersMap.size;
-    pid += playersCount;
-    pid += "u";
-    pid += usernameArray.length;
-    pid += "t";
-    pid += unixHex;
-    // pid 0u4t6a4b2c
-    console.log(`${username} => ${pid}`);
+
+    let pid = `${playersCount}u${usernameArray.length}t${unixHex}`
+    console.log(`[New User] ${username} => ${pid}`);
     return pid;
 }
 
@@ -210,52 +204,47 @@ class Player {
 
 /**
  * プレイヤーデータを取得する
- * @param {string} pid 
+ *
+ * @param {string} pid
  * @returns {{
- * isValid: boolean,
- * player: Player|undefined,
- * resId: number
+ *   isValid: boolean,
+ *   player: Player | undefined,
+ *   resId: number
  * }}
  */
 function getPlayer(pid) {
+    const invalid = (resId) => ({
+        isValid: false,
+        player: undefined,
+        resId
+    });
+
     if (typeof pid !== "string") {
-        return {
-            isValid: false,
-            player: undefined,
-            resId: 4
-        }
+        return invalid(4);
     }
-    const pSplit = utils.pidSplit(pid);
-    if (!utils.isValidUnix(state.gameServerStartAt, pSplit.pUnixHex)) {
-        return {
-            isValid: false,
-            player: undefined,
-            resId: 1
-        }
+
+    const { pUnixHex, pIndex, pNameLen } = utils.pidSplit(pid);
+
+    if (!utils.isValidUnix(state.gameServerStartAt, pUnixHex)) {
+        return invalid(1);
     }
-    const playersArray=[...state.playersMap.values()];
-    const player = playersArray[pSplit.pIndex];
+
+    const player = [...state.playersMap.values()][pIndex];
+
     if (!player) {
-        return {
-            isValid: false,
-            player: undefined,
-            resId: 2
-        }
+        return invalid(2);
     }
-    if (player.displayName.length != pSplit.pNameLen) {
-        return {
-            isValid: false,
-            player: undefined,
-            resId: 3
-        }
+
+    if (player.displayName.length !== pNameLen) {
+        return invalid(3);
     }
+
     return {
         isValid: true,
-        player: player,
+        player,
         resId: 0
-    }
+    };
 }
-
 
 /**
  * 
@@ -485,24 +474,7 @@ app.post("/cpu", (req, res) => {
 
     const pidChk = getPlayer(playerId);
     if (!pidChk.isValid) {
-        console.log(pidChk.resId);
-        switch (pidChk.resId) {
-            case 1:
-                console.log(`${playerId}: invalid`)
-                gameData.nav = "サーバーが再起動しました。再度ログインしてください。";
-                break;
-
-            case 2:
-                gameData.nav = "プレイヤーデータが見つかりませんでした。再度ログインしてください。";
-                break;
-
-            case 3:
-                gameData.nav = "プレイヤーデータが一致しませんでした。再度ログインしてください。";
-                break;
-
-            default:
-                gameData.nav = "エラーが発生しました。再度ログインしてください。";
-        }
+        gameData.nav = "エラーが発生しました。再度ログインしてください。";
         return res.render("cpu", gameData);
     }
     const player = pidChk.player;
@@ -645,8 +617,8 @@ app.post("/api/history", (req, res) => {
     resType = "ok";
     const history = player.gameUsedWords.join("<br>");
     return res.status(201).json({
-        history: history,
-        resType: resType
+        history,
+        resType
     })
 })
 
@@ -802,7 +774,6 @@ app.post("/pidchk", (req, res) => {
     }
 
     // playerが見つかり、整合性が判定できたら
-    //console.log(`Found: ${targPlayer.id} ${targPlayer.displayName}`);
     return res.status(201).json({
         resType: "OK",
         pid: targPlayer.id,
