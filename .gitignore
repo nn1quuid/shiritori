@@ -1,0 +1,4 @@
+addWords.js
+*.txt
+*.py
+node_modules
