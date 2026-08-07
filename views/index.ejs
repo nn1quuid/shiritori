@@ -56,29 +56,7 @@
 
 <body>
   <h1 class="bnto-head-sideline mt-3 mb-5">しりとり</h1>
-  <div class="modal" id="startModal">
-    <div class="modal-dialog modal-dialog-centered" aria-hidden="true">
-      <div class="modal-content text-center">
-        <div class="modal-header">
-          <div class="modal-title text-success w-100 fs-3">
-            準備が整いました！
-          </div>
-        </div>
-        <div class="modal-body">
-          <span id="displayName"></span> さん、しりとりを始めましょう！<br><hr>
-          <div class="h3 mb-2">ルール</div>
-          最後の文字が、<br>
-          伸ばし棒の時は、直前の文字の母音から続けます。<br>
-          小さい文字の時は、大きくします。<br>
-          たとえば、<br>
-          「かれー」の次は「え」から始まる単語です。<br>
-          「かいしゃ」の次は「や」から始まる単語です。<br>
-          <button class="btn btn-success rounded-pill px-3 my-3" id="gameBtn" autofocus
-            disabled>ゲームスタート</button>
-        </div>
-      </div>
-    </div>
-  </div>
+
   <form action="/new/user" method="POST" id="form">
     <div class="d-flex flex-column align-items-center">
 
@@ -120,15 +98,15 @@
     crossorigin="anonymous"></script>
   <script>
     // elements
-    const startModal = new bootstrap.Modal(document.getElementById('startModal'));
     const gameBtn=document.getElementById("gameBtn");
     const form = document.getElementById("form");
     const nameBox = document.getElementById("username");
     const alertMsgEl = document.getElementById("alert");
-    const nameDisplay = document.getElementById("displayName");
 
     const playerId = localStorage.getItem("pid") ?? undefined;
+
     const startBtn = document.getElementById("startBtn");
+    startBtn.disabled=true;
 
     window.addEventListener("DOMContentLoaded", async () => {
       let pidFD = new FormData();
@@ -137,7 +115,11 @@
         method: "POST",
         body: new URLSearchParams(pidFD)
       })
-
+      if(!pidChk.ok){
+        alertMsgEl.textContent=`エラーが発生しました。(HTTP ${pidChk.status})`;
+        alertMsgEl.style.display="";
+        return
+      }
       const chkRes = await pidChk.json();
 
       if (chkRes.resType == "Error") {
@@ -145,7 +127,6 @@
         document.getElementById("loadSpin").style.display = "none";
         startBtn.disabled=false;
       } else if (chkRes.resType == "OK") {
-        nameDisplay.innerText = chkRes.username;
         location.href="/main";
       }
     })
@@ -154,44 +135,42 @@
 
     nameBox.addEventListener("input", () => {
       document.getElementById("alert").style.display = "none";
+      startBtn.disabled=false;
     })
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       if (nameBox.value == "") {
-        alertMsgEl.innerText = "ユーザーネームを入力してください";
-        return alertMsgEl.style.display = "";
+        alertMsgEl.textContent = "ユーザーネームを入力してください";
+        alertMsgEl.style.display = "";
+        return
       }
       startBtn.disabled = true;
       nameBox.readOnly = true;
-      document.getElementById("loadText").innerText = "しばらくお待ちください";
+      document.getElementById("loadText").textContent = "しばらくお待ちください";
       document.getElementById("loadSpin").style.display = "";
-
+      
       const response = await fetch(form.action, {
         method: form.method,
         body: new URLSearchParams(new FormData(form))
       });
+      if(!response.ok){
+        alertMsgEl.textContent=`エラーが発生しました。(HTTP ${response.status})`;
+        alertMsgEl.style.display="";
+      }
       const res = await response.json();
       if (res.resType == "OK") {
-        nameDisplay.innerText = res.displayName;
         localStorage.setItem("pid", res.pid);
         location.href="/main";
-        //startModal.show();
-        gameBtn.onclick = () => {
-          location.href = `/cpu?pid=${res.pid}`;
-        };
-
-        gameBtn.disabled = false;
-        gameBtn.focus();
-      } else {
-        alertMsgEl.innerText = res.errMsg;
-        alertMsgEl.style.display = "";
-        startBtn.disabled = false;
-        nameBox.readOnly = false;
-        document.getElementById("loadText").innerText = "はじめる";
-        document.getElementById("loadSpin").style.display = "none";
-        nameBox.value = "";
+        return
       }
+      alertMsgEl.innerText = res.errMsg;
+      alertMsgEl.style.display = "";
+      startBtn.disabled = false;
+      nameBox.readOnly = false;
+      document.getElementById("loadText").textContent = "はじめる";
+      document.getElementById("loadSpin").style.display = "none";
+      nameBox.value = "";
     })
   </script>
 </body>

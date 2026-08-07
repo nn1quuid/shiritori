@@ -180,28 +180,38 @@
     const pvpBtn = document.getElementById("pvp");
     const nameDisplay = document.getElementById("displayName");
 
-    const playerId = localStorage.getItem("pid") ?? undefined;
+    
 
     window.addEventListener("DOMContentLoaded", async () => {
+      const playerId = localStorage.getItem("pid") ?? undefined;
+      if (!playerId){
+        return location.href="/";
+      }
       let pidFD = new FormData();
       pidFD.append("playerId", playerId);
-      const pidChk = await fetch("/pidchk", {
+
+      const response = await fetch("/pidchk", {
         method: "POST",
         body: new URLSearchParams(pidFD)
       })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
 
-      const chkRes = await pidChk.json();
+      const chkRes = await response.json();
 
       if (chkRes.resType == "Error") {
         console.log("PID Check: " + chkRes.errMsg);
         location.href = "/";
-      } else if (chkRes.resType == "OK") {
-        document.getElementById("who").innerText = chkRes.username;
-        document.getElementById("whoid").innerText = "@" + chkRes.pid;
+        return;
+      }
+      if (chkRes.resType == "OK") {
+        document.getElementById("who").textContent = chkRes.username;
+        document.getElementById("whoid").textContent = "@" + chkRes.pid;
         const userMenu = document.querySelector(".bnto-user");
         let theme = chkRes.player.themeColor;
         userMenu.style.setProperty("--c1", theme);
-        nameDisplay.innerText = chkRes.username;
+        nameDisplay.textContent = chkRes.username;
 
         gameBtn.onclick = () => {
           location.href = `/cpu?pid=${encodeURIComponent(playerId)}`;
