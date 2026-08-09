@@ -71,3 +71,14 @@ function unixToJSTstr(timestamp) {
     return `${yyyy}/${mm}/${dd} ${HH}:${MM}`;
 }
 exports.unixToJSTstr=unixToJSTstr;
+
+/**
+ * 
+ * @param {Array} array 
+ */
+function choice(array) {
+    let len = array.length;
+    let r = Math.floor(Math.random() * len);
+    return array[r]
+}
+exports.choice=choice;

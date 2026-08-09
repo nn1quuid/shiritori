@@ -22,13 +22,17 @@ app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 
 state.gameServerStartAt = utils.getUnix().hex;
+console.log("This server is", state.gameServerStartAt);
 
 function newToken(unique = "uq") {
     const token = String(utils.randint(0, 9999)) + unique + utils.getUnix().hex;
     state.tokens.set(token, utils.getUnix().timestamp);
+    const delSec=10;
     setTimeout(() => {
         state.tokens.delete(token);
-    }, 1000 * 10);
+        console.log("[Auto-deleted Token]", token);
+    }, 1000 * delSec);
+    console.log("[New Token]", token, `(${delSec}sec)`);
     return token;
 }
 
@@ -75,7 +79,7 @@ class Room {
     sockets = [];
     maxSockets = 2;
     players = []; // instance
-    turn = 1;
+    turn = 0;
     firstAtk = 0;
     constructor(id, name) {
         this.id = id;
@@ -101,8 +105,12 @@ class Room {
         this.usedWords = ["しりとり"];
         this.sockets=[];
         this.players=[];
-        this.turn = 1;
+        this.turn = 0;
         this.firstAtk = 0;
+    }
+
+    latestWord(){
+        return this.usedWords.at(-1);
     }
 
     /**
@@ -112,7 +120,7 @@ class Room {
      * @returns 
      */
     submit(pid, word) {
-        console.log("Submitting", pid, word);
+        console.log("Submit Start:", pid, word);
         if (!pid || !word) {
             return false;
         }
@@ -124,10 +132,10 @@ class Room {
             return false;
         }
         // if room includes player
-        const currentPlayerIndex = (this.turn-1) % this.maxSockets;
+        const currentPlayerIndex = this.turn % this.maxSockets;
         const currentTurnPlayer = this.players[currentPlayerIndex];
 
-        if (currentTurnPlayer != player && player.displayName != "%dev%"){
+        if (currentTurnPlayer != player){
             return false;
         }
         if (word.length == 0) {
@@ -248,16 +256,6 @@ function getPlayer(pid) {
 
 /**
  * 
- * @param {Array} array 
- */
-function choice(array) {
-    let len = array.length;
-    let r = Math.floor(Math.random() * len);
-    return array[r]
-}
-
-/**
- * 
  * @param {string} inputWord
  */
 function wordNormalize(inputWord) {
@@ -362,10 +360,10 @@ app.get("/dict", (req, res) => {
 
 app.get("/status", (req, res) => {
     let content = "<html><body><h1>Server [" + state.gameServerStartAt + "]</h1><hr>";
-    content += `${JSON.stringify([...state.tokens.keys()])}<hr>`;
+    content += `TOKEN:${JSON.stringify([...state.tokens.keys()])}<hr>ROOM:`;
     const roomsArray=[...state.roomsMap.values()]
     roomsArray.forEach(room => {
-        content += `<small>${JSON.stringify(room)}</small><hr>`;
+        content += `<small>${JSON.stringify(room)}</small><hr>PLAYER:`;
     })
     
     const playersArray=[...state.playersMap.values()]
@@ -551,14 +549,14 @@ app.post("/cpu", (req, res) => {
                     "CPUは単語を使い切ってしまいました。",
                     "CPUに使用可能な単語が残っていません。"
                 ]
-                const tempmsg = choice(tempmsgs);
+                const tempmsg = utils.choice(tempmsgs);
                 gameData.word = " - - - - ";
                 gameData.nav = `${tempmsg} ${player.displayName} さんの勝ち！`;
                 gameData.navType = "win";
                 return res.render("cpu", gameData)
 
             } else {
-                resWord = choice(wordsArray);
+                resWord = utils.choice(wordsArray);
                 if (resWord.slice(-1) == "ん") {
                     if (attempt > 20) {
                         break
