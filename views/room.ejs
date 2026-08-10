@@ -168,13 +168,10 @@
                     <%= room.name %>
                 </h1>
                 <p class="text-muted mb-4">
-                    <span id="playersCount"><%= room.players.length %></span>人がプレイ中
+                    <span id="playersCount"><%= room.players.length %></span>/<%= room.maxSockets %>人がプレイ中
                 </p>
 
                 <div id="turns" class="mb-3">
-                    <span class="text-secondary">Aさん</span>
-                    <span class="fw-bold text-primary">Bさん</span>
-                    <span class="text-secondary">Cさん</span>
                 </div>
 
                 <button class="btn btn-primary btn-lg mb-4" id="joinBtn">
@@ -188,7 +185,6 @@
 
                 <div id="turnDiv" class="border rounded p-3 turn-other mb-4">
                     <div id="turns" class="fs-5 fw-bold text-primary mb-3">
-                        0ターン目
                     </div>
                     <div class="text-secondary mb-2">現在の単語</div>
                     <div class="fs-3 fw-bold">
@@ -390,7 +386,7 @@
 
                     turns.appendChild(span);
                     if (index < gameData.playerNames.length - 1) {
-                        turns.appendChild(document.createTextNode(" "));
+                        turns.appendChild(document.createTextNode("→"));
                     }
                 });
             })
