@@ -143,23 +143,7 @@
 </head>
 
 <body>
-    <div class="bnto-user" data-bnto-usermenu>
-        <button type="button" class="bnto-user-btn" aria-label="ユーザーメニュー">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-            </svg>
-        </button>
-        <div class="bnto-user-menu">
-            <div class="who"><b id="who"></b><span id="whoid"></span></div>
-            <a href="/settings/profile">プロフィール</a>
-            <a href="/status">ステータス</a>
-            <div class="sep" role="separator"></div>
-            <a href="/logout" class="out">ログアウト</a>
-        </div>
-    </div>
-
+    <%- include("partials/icon") %>
     <div class="container py-5">
         <div class="card shadow-sm mx-auto" style="max-width: 600px;">
             <div class="card-body text-center p-4">
@@ -396,8 +380,6 @@
                 warnBox.textContent="切断されました。";
             })
         })();
-
-
     </script>
     <script>
         (function () {
