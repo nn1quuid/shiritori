@@ -18,7 +18,7 @@ const io = new Server(server, {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+app.use(express.static("public"));
 app.set("view engine", "ejs");
 
 state.gameServerStartAt = utils.getUnix().hex;

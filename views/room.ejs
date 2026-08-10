@@ -12,6 +12,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <title>ルーム<%= id %>
     </title>
+    <link rel="stylesheet" href="/icon.css">
     <style>
         body {
             font-family: "ubuntu sans", "m plus 1", sans-serif;
@@ -45,99 +46,6 @@
         #latest.changing {
             opacity: 0;
             transform: translateY(-4px);
-        }
-
-        .bnto-user {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            z-index: 1000;
-
-            --c1: lightgray;
-            --dur: .15s;
-            display: inline-block;
-        }
-
-        /* 丸アバターボタン */
-        .bnto-user-btn {
-            width: 46px;
-            height: 46px;
-            border-radius: 50%;
-            border: 3px solid #fff;
-            background: var(--c1);
-            color: #fff;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 5px 14px rgba(0, 0, 0, .16);
-        }
-
-        .bnto-user-menu {
-            position: absolute;
-            top: calc(100% + 10px);
-            right: 0;
-            min-width: 200px;
-            z-index: 5;
-            background: #fff;
-            border: 2px solid #DFE9F1;
-            border-radius: 12px;
-            padding: 6px;
-            box-shadow: 0 12px 28px rgba(0, 0, 0, .12);
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-6px);
-            transition: opacity var(--dur), transform var(--dur), visibility var(--dur);
-        }
-
-        .bnto-user.is-open .bnto-user-menu {
-            opacity: 1;
-            visibility: visible;
-            transform: none;
-        }
-
-        /* ユーザー情報ヘッダー */
-        .bnto-user-menu .who {
-            padding: 8px 12px 10px;
-            border-bottom: 2px dashed #DFE9F1;
-            margin-bottom: 4px;
-        }
-
-        .bnto-user-menu .who b {
-            display: block;
-        }
-
-        .bnto-user-menu .who span {
-            font-size: 11px;
-            color: #9a948a;
-        }
-
-        .bnto-user-menu a {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            padding: 9px 12px;
-            border-radius: 8px;
-            color: inherit;
-            text-decoration: none;
-            font-weight: 700;
-        }
-
-        .bnto-user-menu a:hover {
-            background: #EAF2F8;
-        }
-
-        .bnto-user-menu .sep {
-            border-top: 2px dashed #DFE9F1;
-            margin: 4px 0;
-        }
-
-        .bnto-user-menu .out {
-            color: hsl(4 75% 52%);
-        }
-
-        .bnto-user-menu .out:hover {
-            background: hsl(4 75% 96%);
         }
     </style>
 </head>
