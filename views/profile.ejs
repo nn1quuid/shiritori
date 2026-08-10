@@ -75,16 +75,16 @@
     const pid=localStorage.getItem("pid");
     window.addEventListener("DOMContentLoaded", async ()=>{
       const fd=new FormData();
-      fd.append("playerId", pid);
-      const res=await fetch("/pidchk", {
+      fd.append("pid", pid);
+      const response=await fetch("/api/pid", {
         method:"POST",
         body: new URLSearchParams(fd)
       })
-      const response=await res.json();
-      if(response.resType=="Error"){
+      const result=await response.json();
+      if(!result.ok){
         return location.href="/";
       }
-      const player=response.player;
+      const player=result.player;
       document.getElementById("displayName").value=player.displayName;
       document.getElementById("pid").value=pid;
     })

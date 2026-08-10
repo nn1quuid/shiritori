@@ -147,22 +147,21 @@
     window.addEventListener("DOMContentLoaded", async () => {
       const playerId = localStorage.getItem("pid") ?? undefined;
       let pidFD = new FormData();
-      pidFD.append("playerId", playerId);
-      const pidChk = await fetch("/pidchk", {
+      pidFD.append("pid", playerId);
+      const response = await fetch("/api/pid", {
         method: "POST",
         body: new URLSearchParams(pidFD)
       })
 
-      const chkRes = await pidChk.json();
+      const result = await response.json();
 
-      if (chkRes.resType == "Error") {
-        console.log("PID Check: " + chkRes.errMsg);
+      if (!result.ok) {
         location.href="/";
-      } else if (chkRes.resType == "OK") {
-        document.getElementById("who").innerText=chkRes.username;
-        document.getElementById("whoid").innerText="@"+chkRes.pid;
+      } else if (result.ok) {
+        document.getElementById("who").innerText=result.player.displayName;
+        document.getElementById("whoid").innerText="@"+result.player.id;
         const userMenu = document.querySelector(".bnto-user");
-        let theme=chkRes.player.themeColor;
+        let theme=result.player.themeColor;
         userMenu.style.setProperty("--c1", theme);
 
         newRoomBtn.disabled=false;

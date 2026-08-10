@@ -110,19 +110,17 @@
 
     window.addEventListener("DOMContentLoaded", async () => {
       let pidFD = new FormData();
-      pidFD.append("playerId", playerId);
-      const pidChk = await fetch("/pidchk", {
+      pidFD.append("pid", playerId);
+      const pidChk = await fetch("/api/pid", {
         method: "POST",
         body: new URLSearchParams(pidFD)
       })
-      const chkRes = await pidChk.json();
+      const result = await pidChk.json();
 
-      // ログイン済み=OK
-      if (chkRes.resType == "Error") {
-        console.log("PID Check: " + chkRes.errMsg);
+      if (!result.ok) {
         document.getElementById("loadSpin").style.display = "none";
         startBtn.disabled=false;
-      } else if (chkRes.resType == "OK") {
+      } else {
         location.href="/main";
       }
     })
@@ -136,7 +134,7 @@
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      if (nameBox.value == "") {
+      if (nameBox.value.trim() == "") {
         alertMsgEl.textContent = "ユーザーネームを入力してください";
         alertMsgEl.style.display = "";
         return
@@ -150,11 +148,7 @@
         method: form.method,
         body: new URLSearchParams(new FormData(form))
       });
-      if(!response.ok){
-        alertMsgEl.textContent=`エラーが発生しました。(HTTP ${response.status})`;
-        alertMsgEl.style.display="";
-        return
-      }
+
       const res = await response.json();
       if (res.resType == "OK") {
         localStorage.setItem("pid", res.pid);

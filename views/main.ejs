@@ -187,26 +187,24 @@
         return
       }
       let pidFD = new FormData();
-      pidFD.append("playerId", playerId);
+      pidFD.append("pid", playerId);
 
-      const response = await fetch("/pidchk", {
+      const response = await fetch("/api/pid", {
         method: "POST",
         body: new URLSearchParams(pidFD)
       })
-      const chkRes = await response.json();
-
-      if (chkRes.resType == "Error") {
-        console.log("PID Check: " + chkRes.errMsg);
+      const result = await response.json();
+      if (!result.ok) {
         location.href = "/";
         return;
       }
-      if (chkRes.resType == "OK") {
-        document.getElementById("who").textContent = chkRes.username;
-        document.getElementById("whoid").textContent = "@" + chkRes.pid;
+      if (result.ok) {
+        document.getElementById("who").textContent = result.player.displayName;
+        document.getElementById("whoid").textContent = "@" + result.player.id;
         const userMenu = document.querySelector(".bnto-user");
-        let theme = chkRes.player.themeColor;
+        let theme = result.player.themeColor;
         userMenu.style.setProperty("--c1", theme);
-        nameDisplay.textContent = chkRes.username;
+        nameDisplay.textContent = result.player.displayName;
 
         gameBtn.onclick = () => {
           location.href = `/cpu?pid=${encodeURIComponent(playerId)}`;
@@ -215,7 +213,7 @@
           location.href = `/rooms`;
         };
         gameBtn.disabled = false;
-        // pvpBtn.disabled = false;
+        pvpBtn.disabled = false;
         gameBtn.focus();
       }
     })

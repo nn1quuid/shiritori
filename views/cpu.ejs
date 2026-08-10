@@ -142,6 +142,7 @@
     let wordEl=document.getElementById("userword");
     document.getElementById("form").addEventListener("submit", (e)=>{
       document.getElementById("submitBtn").disabled=true;
+      wordEl.value=wordEl.value.trim();
       if(wordEl.value.length>25){
         document.getElementById("login").textContent="単語が長すぎます！";
         document.getElementById("login").style.display="";
@@ -162,29 +163,28 @@
     }
     async function getUserData(){
       let pidFD = new FormData();
-      pidFD.append("playerId", localStorage.getItem("pid"));
-      const pidChk = await fetch("/pidchk", {
+      pidFD.append("pid", localStorage.getItem("pid"));
+      const pidChk = await fetch("/api/pid", {
         method: "POST",
         body: new URLSearchParams(pidFD)
       })
 
-      const chkRes = await pidChk.json();
+      const result = await pidChk.json();
 
-      if (chkRes.resType == "Error") {
-        console.log("PID Check: " + chkRes.errMsg);
+      if (!result.ok) {
         document.getElementById("login").style.display="";
         document.getElementById("loginLink").focus();
         //document.getElementById("infoBox").style.display="none";
         document.getElementById("submitBtn").disabled=true;
         document.getElementById("userword").disabled=true;
-      } else if (chkRes.resType == "OK") {
-          document.getElementById("who").innerText=chkRes.username;
-          document.getElementById("whoid").innerText="@"+chkRes.pid;
-          document.getElementById("pid").value=chkRes.pid;
+      } else {
+          document.getElementById("who").textContent=result.player.displayName;
+          document.getElementById("whoid").textContent="@"+result.player.id;
+          document.getElementById("pid").value=result.player.id;
           document.getElementById("submitBtn").disabled=false;
           
           const userMenu = document.querySelector(".bnto-user");
-          let theme=chkRes.player.themeColor;
+          let theme=result.player.themeColor;
           userMenu.style.setProperty("--c1", theme);
 
       }
@@ -209,21 +209,21 @@
     const historyEl=document.getElementById("history-words");
     btn.addEventListener("click", async ()=>{
       srtrEl.style.left = srtrEl.style.left == "1rem" ? "-50rem" : "1rem";
-      if(historyEl.innerText==""){
-        historyEl.innerText="読み込み中……";
+      if(historyEl.textContent.trim()==""){
+        historyEl.textContent="読み込み中……";
         const fd=new FormData();
         fd.append("pid", localStorage.getItem("pid"));
-        fd.append("turn", document.getElementById("turn").innerText);
+        fd.append("turn", document.getElementById("turn").textContent);
         const res=await fetch("/api/history", {
           method:"POST",
           body: new URLSearchParams(fd)
         })
         const result=await res.json();
         if(result.resType=="error"){
-          historyEl.innerText="読み込みに失敗しました";
+          historyEl.textContent="読み込みに失敗しました";
           return
         } else if (result.history.length==0){
-          historyEl.innerText="まだ履歴がないようです。"
+          historyEl.textContent="まだ履歴がないようです。"
           return
         }
         historyEl.innerHTML=result.history;
