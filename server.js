@@ -302,7 +302,7 @@ function getPlayer(pid) {
 }
 
 /**
- * 
+ * しりとり用に単語の処理をします
  * @param {string} inputWord
  */
 function wordNormalize(inputWord) {
@@ -310,7 +310,7 @@ function wordNormalize(inputWord) {
     let hiraConv = "";
     let converted = "";
     temp.forEach(char => {
-        newChar = /[ァ-ヶ]/.test(char) ? String.fromCharCode(char.charCodeAt(0) - 0x60) : char; // カタカナをひらがなに変換
+        let newChar = /[ァ-ヶ]/.test(char) ? String.fromCharCode(char.charCodeAt(0) - 0x60) : char; // カタカナをひらがなに変換
         converted += newChar;
         hiraConv += newChar;
     })
@@ -750,31 +750,35 @@ app.post("/new/room", (req, res) => {
 })
 app.post("/new/user", (req, res) => {
     const { username } = req.body ?? {};
-    if (typeof username !== "string" || username.trim() === "") {
-        return res.status(400).json({
+    const sendError = (msg) =>
+        res.status(400).json({
             resType: "Error",
-            errMsg: "ユーザーネームを入力してください。"
+            errMsg: msg
         });
-    }
-    const emptyReg = /^[\u0009-\u000d\u001c-\u0020\u1680\u180e\u2000-\u200f\u202f\u205f\u2060\u3000\u3164\ufeff\u034f\u2028\u2029\u202a-\u202e\u2061-\u2063\ufeff]+$/;
-    if (emptyReg.test(username)) {
-        return res.status(400).json({
-            resType: "Error",
-            errMsg: "名前を空白にすることはできません。"
-        })
-    }
-    if (/[\u202e]/.test(username)) {
-        return res.status(400).json({
-            resType: "Error",
-            errMsg: "使用できない文字が含まれています。"
-        })
+
+    if (typeof username !== "string") {
+        return sendError("ユーザーネームを入力してください。");
     }
 
-    if (username.length > 12) {
-        return res.status(400).json({
-            resType: "Error",
-            errMsg: "ユーザーネームは最大 12 文字です。"
-        })
+    if (username.length > 100) {
+        return sendError("ユーザーネームが長すぎます。");
+    }
+
+    if (username.trim() === "") {
+        return sendError("ユーザーネームを入力してください。");
+    }
+
+    if ([...username].length > 12) {
+        return sendError("ユーザーネームは最大 12 文字です。");
+    }
+
+    if (/[\u202e]/.test(username)) {
+        return sendError("使用できない文字が含まれています。");
+    }
+
+    const emptyReg = /^[\u0009-\u000d\u001c-\u0020\u034f\u1680\u180e\u2000-\u200f\u202f\u205f\u2060-\u2063\u3000\u3164\ufeff\u034f\u2028\u2029\u202a-\u202e\u2061-\u2063\ufeff]+$/;
+    if (emptyReg.test(username)) {
+        return sendError("名前を空白にすることはできません。");
     }
 
     try {
@@ -787,19 +791,15 @@ app.post("/new/user", (req, res) => {
             pid: pid,
             displayName: newUser.displayName
         }
-        console.log(response);
         return res.status(201).json(response);
     } catch (error) {
         console.log(error);
-        const errRes = {
-            resType: "Error",
-            errMsg: error.name + ": " + error.message
-        }
-        return res.status(500).json(errRes);
+        return sendError("エラーが発生しました。");
     }
 });
 
 app.post("/pidchk", (req, res) => {
+    // 不使用
     const { playerId } = req.body ?? {};
     if (!playerId) {
         return res.status(400).json({
