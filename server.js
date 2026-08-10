@@ -27,7 +27,7 @@ console.log("This server is", state.gameServerStartAt);
 function newToken(unique = "uq") {
     const token = String(utils.randint(0, 9999)) + unique + utils.getUnix().hex;
     state.tokens.set(token, utils.getUnix().timestamp);
-    const delSec=10;
+    const delSec = 60;
     setTimeout(() => {
         state.tokens.delete(token);
         console.log("[Auto-deleted Token]", token);
@@ -77,16 +77,16 @@ class Room {
     };
     hostId;
     sockets = [];
-    maxSockets = 4;
     players = []; // instance
     turn = 0;
     turnIndex = 0;
     firstAtk = 0;
-    constructor(id, name) {
+    constructor(id, name, maxSockets = 4) {
         this.id = id;
         this.name = name;
         this.createdAt.str = utils.unixToJSTstr(this.createdAt.timestamp);
-        this.usedWords= ["しりとり"];
+        this.usedWords = ["しりとり"];
+        this.maxSockets = Number(maxSockets);
     }
     ago(timestamp) {
         let now = utils.getUnix().timestamp;
@@ -104,19 +104,19 @@ class Room {
     }
     roomInit() {
         this.usedWords = ["しりとり"];
-        this.sockets=[];
-        this.players=[];
+        this.sockets = [];
+        this.players = [];
         this.turn = 0;
-        this.turnIndex=0;
+        this.turnIndex = 0;
         this.firstAtk = 0;
         console.log("[Room Init]", this.id);
     }
 
-    latestWord(){
+    latestWord() {
         return this.usedWords.at(-1);
     }
 
-    leave(socketId, player){
+    leave(socketId, player) {
         const ri = this.sockets.indexOf(socketId);
         if (ri >= 0) {
             this.sockets.splice(ri, 1);
@@ -125,22 +125,22 @@ class Room {
         const rpi = this.players.indexOf(player);
         if (rpi >= 0) {
             this.players.splice(rpi, 1);
-            if(rpi<this.turnIndex){
+            if (rpi < this.turnIndex) {
                 this.turnIndex--;
             }
-            if(this.turnIndex>=this.players.length){
-                this.turnIndex=0;
+            if (this.turnIndex >= this.players.length) {
+                this.turnIndex = 0;
             }
         }
 
-        const ok = (ri>=0 && rpi>=0);
+        const ok = (ri >= 0 && rpi >= 0);
         return {
             ok
         }
     }
 
-    getCurrentTurnPlayer(){
-        const player=this.players[this.turnIndex];
+    getCurrentTurnPlayer() {
+        const player = this.players[this.turnIndex];
         return player
     }
 
@@ -152,7 +152,7 @@ class Room {
      */
     submit(pid, word) {
         console.log("Submit Start:", pid, word);
-        const res={
+        const res = {
             ok: false,
             reason: undefined
         }
@@ -167,15 +167,15 @@ class Room {
             return res;
         }
         // if room includes player
-        if (this.players.length==1){
-            res.reason="2人以上になるまでゲームを開始できません。";
+        if (this.players.length == 1) {
+            res.reason = "2人以上になるまでゲームを開始できません。";
             return res;
         }
 
         const currentTurnPlayer = this.getCurrentTurnPlayer();
 
-        if (currentTurnPlayer != player){
-            res.reason="あなたのターンではありません。"
+        if (currentTurnPlayer != player) {
+            res.reason = "あなたのターンではありません。"
             return res;
         }
         if (word.length == 0) {
@@ -183,25 +183,25 @@ class Room {
         }
 
         const normalized = wordNormalize(word);
-        if (!/^[ぁ-んー]+$/g.test(normalized.converted)){
-            res.reason="この単語は使用できません。"
+        if (!/^[ぁ-んー]+$/g.test(normalized.converted)) {
+            res.reason = "この単語は使用できません。"
             return res;
         }
         const lastWord = this.usedWords[this.usedWords.length - 1];
         const lastNormalized = wordNormalize(lastWord);
 
         if (lastNormalized.nextFirstChar != normalized.firstChar) {
-            res.reason="しりとりが成立していません。"
+            res.reason = "しりとりが成立していません。"
             return res;
         }
-        res.ok=true;
+        res.ok = true;
         return res;
     }
 
     accept(pid, word) {
         const normalized = wordNormalize(word);
         this.usedWords.push(normalized.hiragana);
-        this.turnIndex = (this.turnIndex+1) % this.players.length;
+        this.turnIndex = (this.turnIndex + 1) % this.players.length;
         return normalized.hiragana;
     }
 }
@@ -408,12 +408,12 @@ app.get("/dict", (req, res) => {
 app.get("/status", (req, res) => {
     let content = "<html><body><h1>Server [" + state.gameServerStartAt + "]</h1><hr>";
     content += `TOKEN:${JSON.stringify([...state.tokens.keys()])}<hr>ROOM:`;
-    const roomsArray=[...state.roomsMap.values()]
+    const roomsArray = [...state.roomsMap.values()]
     roomsArray.forEach(room => {
         content += `<small>${JSON.stringify(room)}</small><hr>PLAYER:`;
     })
-    
-    const playersArray=[...state.playersMap.values()]
+
+    const playersArray = [...state.playersMap.values()]
     playersArray.forEach(player => {
         let pn = `<div>${player.displayName} (@${player.id})`
         let p = JSON.stringify(player);
@@ -435,7 +435,7 @@ app.get("/init", (req, res) => {
     const playerNameLen = pSplit.pNameLen;
     const playerUnixHex = pSplit.pUnixHex;
 
-    
+
     const player = state.playersMap.get(pid);
     if (!player) {
         console.log(`${pid}: invalid`)
@@ -667,11 +667,11 @@ app.post("/api/history", (req, res) => {
     })
 })
 
-function publicPlayer(player){
+function publicPlayer(player) {
     if (!player) {
         return undefined
     }
-    const pubPlayer={
+    const pubPlayer = {
         id: player.id,
         displayName: player.displayName,
         themeColor: player.themeColor
@@ -679,7 +679,7 @@ function publicPlayer(player){
     return pubPlayer;
 }
 app.post("/api/pid", (req, res) => {
-    const {pid} = req.body ?? {};
+    const { pid } = req.body ?? {};
     const response = {
         ok: false,
         player: undefined
@@ -691,7 +691,7 @@ app.post("/api/pid", (req, res) => {
     if (!player) {
         return res.status(400).json(response);
     }
-    response.ok=true;
+    response.ok = true;
     response.player = publicPlayer(player);
     return res.json(response);
 })
@@ -701,35 +701,51 @@ app.get("/new/room", (req, res) => {
     return res.redirect("/rooms");
 })
 app.post("/new/room", (req, res) => {
-    let { roomname, pid, token } = req.body ?? {};
-    if (typeof roomname !== "string" || typeof token !== "string" || typeof pid !== "string") {
-        return res.status(400).json({
-            resType: "error"
+    let { roomname, maxSockets, pid, token } = req.body ?? {};
+    if ([roomname, maxSockets, pid, token].some(v => typeof v !== "string")) {
+        return res.render("rooms", {
+            roomsArray: [...state.roomsMap.values()],
+            token: newToken("srrm"),
+            msg: "エラーが発生しました。再度お試しください。"
         })
     }
     if (!state.tokens.has(token)) {
         console.log("Invalid token: " + token);
         const reToken = newToken("srrm");
         const msg = "トークンの有効期限が切れました。再度お試しください。";
-        const roomsArray=[...state.roomsMap.values()];
+        const roomsArray = [...state.roomsMap.values()];
         return res.render("rooms", { roomsArray, token: reToken, msg });
     }
     state.tokens.delete(token);
-    if (roomname.trim() === "") {
-        return res.status(400).json({
-            resType: "error"
+    roomname=roomname.trim().slice(0, 16);
+    if (roomname === "") {
+        return res.render("rooms", {
+            roomsArray: [...state.roomsMap.values()],
+            token: newToken("srrm"),
+            msg: "部屋名を入力してください。"
         })
     }
     const pidChk = getPlayer(pid);
     if (!pidChk.isValid) {
-        return res.status(400).json({ resType: "error" });
+        return res.redirect("/");
     }
-
+    if (!Number.isInteger(Number(maxSockets))){
+        return res.render("rooms", {
+            roomsArray: [...state.roomsMap.values()],
+            token: newToken("srrm"),
+            msg: "最大人数は整数で入力してください。"
+        })
+    }
+    if (Number(maxSockets) > 10) {
+        maxSockets = 10;
+    } else if (Number(maxSockets) < 2) {
+        maxSockets = 2;
+    }
     const roomId = utils.getUnix().hex;
-    const newRoom = new Room(roomId, roomname);
+    const newRoom = new Room(roomId, roomname, maxSockets);
     newRoom.hostId = pid;
     state.roomsMap.set(roomId, newRoom);
-    console.log("New Room:", roomId, roomname);
+    console.log("New Room:", roomId, roomname, maxSockets);
     return res.redirect(`/room/${roomId}`);
 })
 app.post("/new/user", (req, res) => {
@@ -870,13 +886,13 @@ app.get("/logout", (req, res) => {
 
 app.get("/rooms", (req, res) => {
     const token = newToken("srrm");
-    const roomsArray=[...state.roomsMap.values()];
+    const roomsArray = [...state.roomsMap.values()];
     return res.render("rooms", { roomsArray, token });
 })
 app.get("/room/:id", (req, res) => {
     const id = req.params.id;
     const room = state.roomsMap.get(id);
-    if(room===undefined){
+    if (room === undefined) {
         return res.redirect("/");
     }
     return res.render("room", { id, room });
@@ -886,8 +902,8 @@ app.get("/", (req, res) => {
     return res.render("index");
 })
 
-const socketHandler=require("./socket");
-socketHandler(io, {state, getPlayer});
+const socketHandler = require("./socket");
+socketHandler(io, { state, getPlayer });
 
 server.listen(PORT, () => {
     console.log("http://localhost:" + PORT);

@@ -78,7 +78,11 @@
             <table class="table">
               <tr>
                 <th>部屋名</th>
-                <td><input name="roomname" autocomplete="off" autocorrect="off"></td>
+                <td><input name="roomname" id="roomName" autocomplete="off" autocorrect="off" maxlength="16"></td>
+              </tr>
+              <tr>
+                <th>最大人数 (2～10)</th>
+                <td><input name="maxSockets" type="number" value="2" min="2" max="10" autocomplete="off" autocorrect="off"></td>
               </tr>
               <tr hidden>
                 <th>Token</th>
@@ -170,7 +174,8 @@
     })
 
     form.addEventListener("submit", (e)=>{
-      newRoomBtn.disabled=true;
+      const roomName = document.getElementById("roomName");
+      roomName.value=roomName.value.trim();
     })
     newRoomBtn.addEventListener("click", ()=>{
       let modal = new bootstrap.Modal(document.getElementById("modal"));
