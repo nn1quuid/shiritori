@@ -112,6 +112,9 @@ module.exports = (io, { state, getPlayer }) => {
         if (!room) {
             return socket.disconnect();
         }
+        if (msg.length>25){
+            io.to(socket.id).emit("warn", "単語が長すぎます！");
+        }
 
         const res = room.submit(playerId, msg);
 
