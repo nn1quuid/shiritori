@@ -77,9 +77,10 @@ class Room {
     };
     hostId;
     sockets = [];
-    maxSockets = 2;
+    maxSockets = 4;
     players = []; // instance
     turn = 0;
+    turnIndex = 0;
     firstAtk = 0;
     constructor(id, name) {
         this.id = id;
@@ -106,11 +107,41 @@ class Room {
         this.sockets=[];
         this.players=[];
         this.turn = 0;
+        this.turnIndex=0;
         this.firstAtk = 0;
+        console.log("[Room Init]", this.id);
     }
 
     latestWord(){
         return this.usedWords.at(-1);
+    }
+
+    leave(socketId, player){
+        const ri = this.sockets.indexOf(socketId);
+        if (ri >= 0) {
+            this.sockets.splice(ri, 1);
+        }
+
+        const rpi = this.players.indexOf(player);
+        if (rpi >= 0) {
+            this.players.splice(rpi, 1);
+            if(rpi<this.turnIndex){
+                this.turnIndex--;
+            }
+            if(this.turnIndex>=this.players.length){
+                this.turnIndex=0;
+            }
+        }
+
+        const ok = (ri>=0 && rpi>=0);
+        return {
+            ok
+        }
+    }
+
+    getCurrentTurnPlayer(){
+        const player=this.players[this.turnIndex];
+        return player
     }
 
     /**
@@ -121,41 +152,57 @@ class Room {
      */
     submit(pid, word) {
         console.log("Submit Start:", pid, word);
+        const res={
+            ok: false,
+            reason: undefined
+        }
         if (!pid || !word) {
-            return false;
+            return res;
         }
         const player = state.playersMap.get(pid);
         if (!player) {
-            return false;
+            return res;
         }
         if (!this.players.includes(player)) {
-            return false;
+            return res;
         }
         // if room includes player
-        const currentPlayerIndex = this.turn % this.maxSockets;
-        const currentTurnPlayer = this.players[currentPlayerIndex];
+        if (this.players.length==1){
+            res.reason="2人以上になるまでゲームを開始できません。";
+            return res;
+        }
+
+        const currentTurnPlayer = this.getCurrentTurnPlayer();
 
         if (currentTurnPlayer != player){
-            return false;
+            res.reason="あなたのターンではありません。"
+            return res;
         }
         if (word.length == 0) {
-            return false;
+            return res;
         }
 
         const normalized = wordNormalize(word);
+        if (!/^[ぁ-んー]+$/g.test(normalized.converted)){
+            res.reason="この単語は使用できません。"
+            return res;
+        }
         const lastWord = this.usedWords[this.usedWords.length - 1];
         const lastNormalized = wordNormalize(lastWord);
 
         if (lastNormalized.nextFirstChar != normalized.firstChar) {
-            return false;
+            res.reason="しりとりが成立していません。"
+            return res;
         }
-        return true;
+        res.ok=true;
+        return res;
     }
+
     accept(pid, word) {
         const normalized = wordNormalize(word);
         this.usedWords.push(normalized.hiragana);
-        this.turn++;
-        return true;
+        this.turnIndex = (this.turnIndex+1) % this.players.length;
+        return normalized.hiragana;
     }
 }
 
@@ -620,10 +667,21 @@ app.post("/api/history", (req, res) => {
     })
 })
 
+function publicPlayer(player){
+    if (!player) {
+        return undefined
+    }
+    const pubPlayer={
+        id: player.id,
+        displayName: player.displayName,
+        themeColor: player.themeColor
+    }
+    return pubPlayer;
+}
 app.post("/api/pid", (req, res) => {
-    const { pid } = req.body ?? {};
+    const {pid} = req.body ?? {};
     const response = {
-        resType: "error",
+        ok: false,
         player: undefined
     }
     if (!pid || typeof pid !== "string") {
@@ -633,8 +691,8 @@ app.post("/api/pid", (req, res) => {
     if (!player) {
         return res.status(400).json(response);
     }
-    response.resType = "ok";
-    response.player = player;
+    response.ok=true;
+    response.player = publicPlayer(player);
     return res.json(response);
 })
 
