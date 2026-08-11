@@ -219,7 +219,7 @@
                 socket.emit("room:leave", { roomId, playerId });
             })
 
-            socket.on("game:addHistory", (msg) => {
+            socket.on("game:add-history", (msg) => {
                 wordHistory.innerText += msg + "\n";
                 wordHistory.scrollTop=wordHistory.scrollHeight;
 
@@ -249,7 +249,7 @@
                     latest.classList.remove("changing");
                 }, 150);
             }
-            socket.on("updateLatest", (word) => {
+            socket.on("game:update-latest", (word) => {
                 if (!word) {
                     return
                 }

@@ -1,10 +1,29 @@
+const utils=require("./utils");
 module.exports = (io, { state, getPlayer }) => {
+    const EVENTS={
+        ROOM_JOIN_SPECTATOR: "room:join-spectator",
+        ROOM_JOIN_ACCEPT: "room:join-accept",
+        ROOM_JOIN_PLAYER: "room:join-player",
+        ROOM_LEAVE: "room:leave",
+        ALERT_INFO: "info",
+        ALERT_ERROR: "error",
+        ALERT_WARN: "warn",
+        GAME_NOT_YOUR_TURN: "game:not-your-turn",
+        GAME_YOUR_TURN: "game:your-turn",
+        GAME_UPDATE_PLAYER_DATA: "game:update-playerData",
+        GAME_UPDATE_LATEST: "game:update-latest",
+        GAME_ADD_HISTORY: "game:add-history",
+        GAME_SUBMIT: "game:submit",
+        GAME_CHECK_ACTIVE: "game:check-active"
+    }
+
     io.on("connection", (socket) => {
-        socket.on("room:join-spectator", ({ roomId, playerId }) => handleJoinSpectator(socket, roomId, playerId, state, getPlayer));
-        socket.on("room:join-player", ({ roomId, playerId }) => handleJoinRoom(socket, roomId, playerId, state, getPlayer));
-        socket.on("room:leave", ({ roomId, playerId }) => handleLeaveRoom(socket, roomId, playerId, state, getPlayer));
-        socket.on("game:submit", ({ roomId, playerId, msg }) => handleSubmit(socket, roomId, playerId, msg, state));
+        socket.on(EVENTS.ROOM_JOIN_SPECTATOR, ({ roomId, playerId }) => handleJoinSpectator(socket, roomId, playerId, state, getPlayer));
+        socket.on(EVENTS.ROOM_JOIN_PLAYER, ({ roomId, playerId }) => handleJoinRoom(socket, roomId, playerId, state, getPlayer));
+        socket.on(EVENTS.ROOM_LEAVE, ({ roomId, playerId }) => handleLeaveRoom(socket, roomId, playerId, state, getPlayer));
+        socket.on(EVENTS.GAME_SUBMIT, ({ roomId, playerId, msg }) => handleSubmit(socket, roomId, playerId, msg, state));
     });
+
     const handleJoinSpectator = (socket, roomId, playerId, state, getPlayer) => {
         const room = state.roomsMap.get(roomId);
         if (!room) {
@@ -47,11 +66,31 @@ module.exports = (io, { state, getPlayer }) => {
         room.players.push(player);
 
         console.log(socket.id, "joined game room", roomId, `[${room.sockets.length}/${room.maxSockets}]`);
-        socket.to(roomId).emit("info", player.displayName + "がゲームに参加しました" + ` (${room.players.length}/${room.maxSockets})`);
-        io.to(roomId).emit("updateLatest", room.latestWord());
-        io.to(socket.id).emit("room:join-accept");
+        socket.to(roomId).emit(EVENTS.ALERT_INFO, player.displayName + "がゲームに参加しました" + ` (${room.players.length}/${room.maxSockets})`);
+        io.to(roomId).emit(EVENTS.GAME_UPDATE_LATEST, room.latestWord());
+        io.to(socket.id).emit(EVENTS.ROOM_JOIN_ACCEPT);
 
         updatePlayerData(roomId, room);
+        player.updateActivity();
+
+        const checkActiveLoop = setInterval(()=>{
+            const now=utils.getUnix().timestamp;
+            if (room.players.length == 1){
+                // 入った途端に kickされるのを防止する
+                player.updateActivity();
+                return
+            }
+            if (now - player.lastActivity > room.maxInactiveSec){
+                const leaveRes = room.leave(socket.id, player);
+                if (leaveRes.ok){
+                    console.log(socket.id, "AFK-left Room:", roomId, `[${room.sockets.length}/${room.maxSockets}]`);
+                    socket.to(roomId).emit(EVENTS.ALERT_INFO, player.displayName + "が退室しました");
+                    updatePlayerData(roomId, room);
+                }
+                socket.disconnect();
+                clearInterval(checkActiveLoop);
+            }
+        }, 1000)
     };
     const updatePlayerData = (roomId, room) => {
         const playerNames = room.players.map(p => p.displayName);
@@ -63,11 +102,11 @@ module.exports = (io, { state, getPlayer }) => {
             ctp: ctp?.displayName,
             ctpIndex
         }
-        io.to(roomId).emit("game:not-your-turn");
+        io.to(roomId).emit(EVENTS.GAME_NOT_YOUR_TURN);
         if(playerNames.length>=2){
-            io.to(ctpSocketId).emit("game:your-turn");
+            io.to(ctpSocketId).emit(EVENTS.GAME_YOUR_TURN);
         }
-        io.to(roomId).emit("game:update-playerData", gameData);
+        io.to(roomId).emit(EVENTS.GAME_UPDATE_PLAYER_DATA, gameData);
     }
     const handleLeaveRoom = (socket, roomId, playerId, state, getPlayer) => {
         const pidChk = getPlayer(playerId);
@@ -81,15 +120,13 @@ module.exports = (io, { state, getPlayer }) => {
         if (!player || !room) {
             return socket.disconnect();
         }
-        const pi = player.sockets.indexOf(socket.id);
-        if (pi >= 0) {
-            player.sockets.splice(pi, 1);
-        }
+        
         const leaveRes=room.leave(socket.id, player);
         
-        if (pi >= 0 && leaveRes.ok) {
+        if (leaveRes.ok) {
+            // player の場合
             console.log(socket.id, "left room", roomId, `[${room.sockets.length}/${room.maxSockets}]`);
-            socket.to(roomId).emit("info", player.displayName + "が退室しました");
+            socket.to(roomId).emit(EVENTS.ALERT_INFO, player.displayName + "が退室しました");
             updatePlayerData(roomId, room);
         } else {
             // spectator の場合
@@ -97,13 +134,11 @@ module.exports = (io, { state, getPlayer }) => {
         }
 
         socket.disconnect();
-        // debug
-        //console.log("current room status:", room.sockets, room.players);
-        // 0人なら
+
         if (room.players.length == 0) {
             room.roomInit();
-            socket.to(roomId).emit("info", "ゲームを初期化しました");
-            io.to(roomId).emit("updateLatest", room.latestWord());
+            socket.to(roomId).emit(EVENTS.ALERT_INFO, "ゲームを初期化しました");
+            io.to(roomId).emit(EVENTS.GAME_UPDATE_LATEST, room.latestWord());
         }
     };
 
@@ -113,24 +148,24 @@ module.exports = (io, { state, getPlayer }) => {
             return socket.disconnect();
         }
         if (msg.length>25){
-            io.to(socket.id).emit("warn", "単語が長すぎます！");
+            io.to(socket.id).emit(EVENTS.ALERT_WARN, "単語が長すぎます！");
         }
 
         const res = room.submit(playerId, msg);
 
         if (res.ok) {
             const hiragana = room.accept(playerId, msg);
-            io.to(roomId).emit("game:addHistory", hiragana);
-            io.to(roomId).emit("updateLatest", hiragana);
+            io.to(roomId).emit(EVENTS.GAME_ADD_HISTORY, hiragana);
+            io.to(roomId).emit(EVENTS.GAME_UPDATE_LATEST, hiragana);
             updatePlayerData(roomId, room);
         } else {
             const nav=res.reason ?? "エラーが発生しました";
-            io.to(socket.id).emit("warn", nav);
+            io.to(socket.id).emit(ALERT_WARN, nav);
         }
     };
 
     const sendError = (socket, message) => {
-        socket.emit("error", message);
+        socket.emit(EVENTS.ALERT_ERROR, message);
         return socket.disconnect();
     };
 };

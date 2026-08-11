@@ -81,6 +81,7 @@ class Room {
     players = []; // instance
     turn = 0;
     turnIndex = 0;
+    maxInactiveSec = 60 * 5;
     constructor(id, name, maxSockets = 4) {
         this.id = id;
         this.name = name;
@@ -116,6 +117,11 @@ class Room {
     }
 
     leave(socketId, player) {
+        const pi = player.sockets.indexOf(socketId);
+        if (pi >= 0) {
+            player.sockets.splice(pi, 1);
+        }
+
         const ri = this.sockets.indexOf(socketId);
         if (ri >= 0) {
             this.sockets.splice(ri, 1);
@@ -131,8 +137,8 @@ class Room {
                 this.turnIndex = 0;
             }
         }
-
-        const ok = (ri >= 0 && rpi >= 0);
+        player.lastActivity = 0;
+        const ok = (pi >= 0 && ri >= 0 && rpi >= 0);
         return {
             ok
         }
@@ -166,6 +172,7 @@ class Room {
             return res;
         }
         // if room includes player
+        player.updateActivity();
         if (this.players.length == 1) {
             res.reason = "2人以上になるまでゲームを開始できません。";
             return res;
@@ -207,6 +214,8 @@ class Room {
 
 class Player {
     //pvp
+    checkLoop = undefined;
+    lastActivity = 0;
     sockets = [];
     pvpWords = [];
 
@@ -225,7 +234,11 @@ class Player {
 
     constructor(playerId, displayName) {
         this.id = playerId;
-        this.displayName = displayName
+        this.displayName = displayName;
+    }
+
+    updateActivity(){
+        this.lastActivity = utils.getUnix().timestamp;
     }
 
     srtrInit() {
