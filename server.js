@@ -81,7 +81,6 @@ class Room {
     players = []; // instance
     turn = 0;
     turnIndex = 0;
-    firstAtk = 0;
     constructor(id, name, maxSockets = 4) {
         this.id = id;
         this.name = name;
@@ -109,7 +108,6 @@ class Room {
         this.players = [];
         this.turn = 0;
         this.turnIndex = 0;
-        this.firstAtk = 0;
         console.log("[Room Init]", this.id);
     }
 
