@@ -2,6 +2,8 @@ const express = require("express");
 const { Server } = require("socket.io");
 const fs = require("fs");
 
+const cowsay=require("cowsay");
+
 const utils = require("./utils");
 const state = require("./state");
 
@@ -23,7 +25,11 @@ app.use(express.static("public"));
 app.set("view engine", "ejs");
 
 state.gameServerStartAt = utils.getUnix().hex;
-console.log("This server is", state.gameServerStartAt);
+console.log(cowsay.say({
+    text: "This server is " + state.gameServerStartAt,
+    f:"small",
+    y: true
+}));
 
 function newToken(unique = "uq") {
     const token = String(utils.randint(0, 9999)) + unique + utils.getUnix().hex;
