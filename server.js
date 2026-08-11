@@ -16,6 +16,7 @@ const io = new Server(server, {
     pingTimeout: 5000
 });
 
+app.disable("x-powered-by");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
