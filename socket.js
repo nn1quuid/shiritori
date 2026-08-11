@@ -160,7 +160,7 @@ module.exports = (io, { state, getPlayer }) => {
             updatePlayerData(roomId, room);
         } else {
             const nav=res.reason ?? "エラーが発生しました";
-            io.to(socket.id).emit(ALERT_WARN, nav);
+            io.to(socket.id).emit(EVENTS.ALERT_WARN, nav);
         }
     };
 
