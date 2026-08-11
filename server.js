@@ -111,6 +111,11 @@ class Room {
         this.turnIndex = 0;
         console.log("[Room Init]", this.id);
     }
+    wordInit(){
+        this.usedWords=["しりとり"];
+        this.turn=0;
+        this.turnIndex=0;
+    }
 
     latestWord() {
         return this.usedWords.at(-1);
@@ -157,51 +162,53 @@ class Room {
      */
     submit(pid, word) {
         console.log("Submit Start:", pid, word);
-        const res = {
-            ok: false,
-            reason: undefined
+        function fail(reason=undefined){
+            return {ok:false, reason}
+        }
+        function success(){
+            return {ok:true, reason: undefined}
         }
         if (!pid || !word) {
-            return res;
+            return fail();
         }
         const player = state.playersMap.get(pid);
         if (!player) {
-            return res;
+            return fail();
         }
         if (!this.players.includes(player)) {
-            return res;
+            return fail();
         }
         // if room includes player
         player.updateActivity();
         if (this.players.length == 1) {
-            res.reason = "2人以上になるまでゲームを開始できません。";
-            return res;
+            return fail("2人以上になるまでゲームを開始できません。");
         }
 
         const currentTurnPlayer = this.getCurrentTurnPlayer();
 
         if (currentTurnPlayer != player) {
-            res.reason = "あなたのターンではありません。"
-            return res;
+            return fail("あなたのターンではありません。");
         }
         if (word.length == 0) {
-            return res;
+            return fail();
         }
 
         const normalized = wordNormalize(word);
-        if (!/^[ぁ-んー]+$/g.test(normalized.converted)) {
-            res.reason = "この単語は使用できません。"
-            return res;
+        if (!/^[ぁ-んー]+$/g.test(normalized.hiragana)) {
+            return fail("この単語は使用できません。");
         }
         const lastWord = this.usedWords[this.usedWords.length - 1];
         const lastNormalized = wordNormalize(lastWord);
 
         if (lastNormalized.nextFirstChar != normalized.firstChar) {
-            res.reason = "しりとりが成立していません。"
-            return res;
+            return fail("しりとりが成立していません。");
         }
-        res.ok = true;
-        return res;
+
+        if (this.usedWords.includes(normalized.hiragana)){
+            return fail("この単語は既に使われています。");
+        }
+
+        return success();
     }
 
     accept(pid, word) {
