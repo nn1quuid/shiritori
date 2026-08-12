@@ -155,7 +155,7 @@
             const sendBtn = document.getElementById("sendBtn");
             function joinGame() {
                 joinBtn.disabled=true;
-                socket.emit("room:join-player", { roomId, playerId });
+                socket.emit("room:join-player");
                 socket.once("room:join-accept", ()=>{
                     wordInput.disabled = false;
                     sendBtn.disabled = false;
@@ -216,7 +216,7 @@
             })
 
             window.addEventListener("beforeunload", () => {
-                socket.emit("room:leave", { roomId, playerId });
+                socket.emit("room:leave");
             })
 
             socket.on("game:add-history", (msg) => {
@@ -230,7 +230,7 @@
                 e.preventDefault();
                 const msg = wordInput.value.trim();
                 if (msg.length<=25 && /^[ぁ-んァ-ヶー]+$/.test(msg)){
-                    socket.emit("game:submit", { roomId, playerId, msg });
+                    socket.emit("game:submit", { msg });
                 } else {
                     warnBox.style.display="";
                     warnBox.textContent="このワードは使用できません。";
