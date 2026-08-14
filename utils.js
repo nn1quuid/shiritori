@@ -21,14 +21,10 @@ function toHex(dec) {
 }
 exports.toHex = toHex;
 
-function isValidUnix(serverUnix, playerUnix, base = 16) {
+function isValidUnix(serverUnix, playerUnix) {
     let result = hexToDec(playerUnix) - hexToDec(serverUnix);
     // 0未満ならサーバー起動以前のunix
-    if (result < 0) {
-        return false
-    } else {
-        return true
-    }
+    return result >= 0;
 }
 exports.isValidUnix = isValidUnix;
 
@@ -46,14 +42,14 @@ function pidSplit(pid) {
 exports.pidSplit = pidSplit;
 
 /**
- * 
+ * A random number, includes a and b
  * @param {Number} a 
  * @param {Number} b 
  */
 function randint(a, b) {
     let min = Math.min(a, b);
     let max = Math.max(a, b);
-    let r = Math.floor(Math.random() * (max - min) + min);
+    let r = Math.floor(Math.random() * (max - min + 1) + min);
     return r;
 }
 exports.randint = randint;
@@ -82,3 +78,27 @@ function choice(array) {
     return array[r]
 }
 exports.choice=choice;
+
+/**
+ * 
+ * @param {Array} array 
+ */
+function mode(array){
+    const counts=new Map();
+    for (const item of array){
+        counts.set(item, (counts.get(item) ?? 0) + 1);
+    }
+
+    let modes=[];
+    let tempMax=0;
+    for (const [value, count] of counts){
+        if(tempMax < count){
+            modes=[value];
+            tempMax=count;
+        } else if(tempMax==count){
+            modes.push(value);
+        }
+    }
+    return {modes, count: tempMax}
+}
+exports.mode=mode;
