@@ -286,6 +286,7 @@
             socket.on("disconnect", ()=>{
                 warnBox.style.display="";
                 warnBox.textContent="切断されました。";
+                warnBox.innerHTML+="<br><button class='btn btn-link' onclick='location.reload()'>ページを更新する</button>"
             })
         })();
     </script>

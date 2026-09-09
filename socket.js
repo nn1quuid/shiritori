@@ -79,20 +79,24 @@ module.exports = (io, { state, getPlayer }) => {
         io.to(socket.id).emit(EVENTS.ROOM_JOIN_ACCEPT);
 
         updatePlayerData(roomId);
-        player.updateActivity();
+        updateActivity(player);
 
         const checkActiveLoop = setInterval(() => {
             const now = utils.getUnix().timestamp;
             if (room.players.length == 1) {
                 // 入った途端に kickされるのを防止する
-                player.updateActivity();
+                updateActivity(player);
+                return
+            }
+            if(room.getCurrentTurnPlayer().id != player.id){
+                updateActivity(player); // ターンでないplayerをupdate
                 return
             }
             if (now - player.lastActivity > room.maxInactiveSec) {
                 socket.disconnect();
                 clearInterval(checkActiveLoop);
             }
-        }, 10000)
+        }, 5000)
     };
     const updatePlayerData = (roomId) => {
         const room = state.roomsMap.get(roomId);
@@ -146,6 +150,10 @@ module.exports = (io, { state, getPlayer }) => {
             io.to(socket.id).emit(EVENTS.ALERT_WARN, nav);
         }
     };
+
+    const updateActivity = (player) => {
+        player.updateActivity();
+    }
 
     const sendError = (socket, message) => {
         socket.emit(EVENTS.ALERT_ERROR, message);
