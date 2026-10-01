@@ -219,6 +219,17 @@
                 socket.emit("room:leave");
             })
 
+            function addHistory(word){
+                wordHistory.innerText += word + "\n";
+                wordHistory.scrollTop = wordHistory.scrollHeight;
+            }
+
+            socket.on("game:send-history", (words)=>{
+                words.forEach(word=>{
+                    addHistory(word);
+                })
+            })
+
             socket.on("game:add-history", (msg) => {
                 wordHistory.innerText += msg + "\n";
                 wordHistory.scrollTop=wordHistory.scrollHeight;
@@ -262,6 +273,10 @@
             socket.on("game:your-turn",()=>{
                 turnChange("you");
             })
+
+            // socket.on("game:finish", ()=>{
+            //     turnChange("other");
+            // })
 
             socket.on("game:update-playerData", (gameData)=>{
                 playersCount.textContent=gameData.playerNames.length;

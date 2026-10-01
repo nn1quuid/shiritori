@@ -14,7 +14,8 @@ module.exports = (io, { state, getPlayer }) => {
         GAME_UPDATE_LATEST: "game:update-latest",
         GAME_ADD_HISTORY: "game:add-history",
         GAME_SUBMIT: "game:submit",
-        GAME_CHECK_ACTIVE: "game:check-active"
+        GAME_CHECK_ACTIVE: "game:check-active",
+        GAME_SEND_HISTORY: "game:send-history"
     }
 
     io.on("connection", (socket) => {
@@ -44,6 +45,10 @@ module.exports = (io, { state, getPlayer }) => {
         socket.data.playerId = player.id;
         socket.data.as = "spectator";
         console.log(`${player.displayName} joined room ${roomId} as spectator`);
+
+        // 履歴読み込み
+        const history = room.usedWords;
+        io.to(socket.id).emit(EVENTS.GAME_SEND_HISTORY, history);
     }
     const handleJoinRoom = (socket) => {
         const { roomId, playerId } = socket.data;
@@ -88,7 +93,7 @@ module.exports = (io, { state, getPlayer }) => {
                 updateActivity(player);
                 return
             }
-            if(room.getCurrentTurnPlayer().id != player.id){
+            if (room.getCurrentTurnPlayer().id != player.id) {
                 updateActivity(player); // ターンでないplayerをupdate
                 return
             }
@@ -160,7 +165,7 @@ module.exports = (io, { state, getPlayer }) => {
         return socket.disconnect();
     };
 
-    const handleDisconnect = (socket, reason=undefined) => {
+    const handleDisconnect = (socket, reason = undefined) => {
         const { roomId, playerId } = socket.data;
         if (!roomId || !playerId) {
             return
