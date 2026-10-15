@@ -5,6 +5,7 @@ module.exports = (io, { state, getPlayer }) => {
         ROOM_JOIN_ACCEPT: "room:join-accept",
         ROOM_JOIN_PLAYER: "room:join-player",
         ROOM_LEAVE: "room:leave",
+        ROOM_ALONE: "room:alone",
         ALERT_INFO: "info",
         ALERT_ERROR: "error",
         ALERT_WARN: "warn",
@@ -13,6 +14,7 @@ module.exports = (io, { state, getPlayer }) => {
         GAME_UPDATE_PLAYER_DATA: "game:update-playerData",
         GAME_UPDATE_LATEST: "game:update-latest",
         GAME_ADD_HISTORY: "game:add-history",
+        GAME_RESET_HISTORY: "game:reset-history",
         GAME_SUBMIT: "game:submit",
         GAME_CHECK_ACTIVE: "game:check-active",
         GAME_SEND_HISTORY: "game:send-history"
@@ -23,8 +25,23 @@ module.exports = (io, { state, getPlayer }) => {
         socket.on(EVENTS.ROOM_JOIN_PLAYER, () => handleJoinRoom(socket));
         socket.on(EVENTS.ROOM_LEAVE, () => handleLeaveRoom(socket));
         socket.on(EVENTS.GAME_SUBMIT, ({ msg }) => handleSubmit(socket, msg));
+        socket.on(EVENTS.GAME_RESET_HISTORY, () => handleReset(socket));
         socket.on("disconnect", (reason) => handleDisconnect(socket, reason));
     });
+
+    const handleReset = (socket) => {
+        const {roomId} = socket.data;
+        const room = state.roomsMap.get(roomId);
+        if (room.sockets.length == 1) {
+            // reset処理
+            room.usedWords = ["しりとり"];
+            room.turn = 0;
+            room.turnIndex = 0;
+
+            io.to(roomId).emit(EVENTS.GAME_UPDATE_LATEST, room.latestWord());
+            io.to(roomId).emit(EVENTS.ALERT_INFO, "履歴をリセットしました！");
+        }
+    }
 
     const handleJoinSpectator = (socket, roomId, playerId) => {
         const room = state.roomsMap.get(roomId);
@@ -93,7 +110,7 @@ module.exports = (io, { state, getPlayer }) => {
                 updateActivity(player);
                 return
             }
-            if (room.getCurrentTurnPlayer().id != player.id) {
+            if (room.getCurrentTurnPlayer()?.id != player.id) {
                 updateActivity(player); // ターンでないplayerをupdate
                 return
             }
@@ -124,7 +141,7 @@ module.exports = (io, { state, getPlayer }) => {
         io.to(roomId).emit(EVENTS.GAME_UPDATE_PLAYER_DATA, gameData);
     }
     const handleLeaveRoom = (socket) => {
-        socket.disconnect();
+        socket.disconnect();        
         return;
     };
 
@@ -158,6 +175,7 @@ module.exports = (io, { state, getPlayer }) => {
 
     const updateActivity = (player) => {
         player.updateActivity();
+        
     }
 
     const sendError = (socket, message) => {
@@ -188,10 +206,13 @@ module.exports = (io, { state, getPlayer }) => {
                 updatePlayerData(roomId);
             }
         }
-        if (room.players.length == 0) {
+
+        if (room.sockets.length == 0) {
             room.roomInit();
             socket.to(roomId).emit(EVENTS.ALERT_INFO, "ゲームを初期化しました");
             io.to(roomId).emit(EVENTS.GAME_UPDATE_LATEST, room.latestWord());
+        } else if (room?.sockets?.length == 1) {
+            io.to(socket.data.roomId).emit(EVENTS.ROOM_ALONE);
         }
     }
 };
