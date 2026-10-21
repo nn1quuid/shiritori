@@ -48,7 +48,7 @@
 <body>
     <%- include("partials/navbar") %>
     <%- include("partials/icon") %>
-    <div class="container py-5">
+    <div class="container py-4">
         <div class="card shadow-sm mx-auto" style="max-width: 600px;">
             <div class="card-body text-center p-4">
 
@@ -306,6 +306,11 @@
             function reset(){
                 socket.emit("game:reset-history");
             }
+            socket.on("game:reset-ok", ()=>{
+                wordHistory.textContent = "";
+                addHistory("しりとり");
+                resetBtn.hidden = true;
+            })
 
             socket.on("disconnect", ()=>{
                 warnBox.style.display="";

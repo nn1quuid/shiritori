@@ -15,6 +15,7 @@ module.exports = (io, { state, getPlayer }) => {
         GAME_UPDATE_LATEST: "game:update-latest",
         GAME_ADD_HISTORY: "game:add-history",
         GAME_RESET_HISTORY: "game:reset-history",
+        GAME_RESET_OK: "game:reset-ok",
         GAME_SUBMIT: "game:submit",
         GAME_CHECK_ACTIVE: "game:check-active",
         GAME_SEND_HISTORY: "game:send-history"
@@ -40,6 +41,7 @@ module.exports = (io, { state, getPlayer }) => {
 
             io.to(roomId).emit(EVENTS.GAME_UPDATE_LATEST, room.latestWord());
             io.to(roomId).emit(EVENTS.ALERT_INFO, "履歴をリセットしました！");
+            io.to(roomId).emit(EVENTS.GAME_RESET_OK);
         }
     }
 
