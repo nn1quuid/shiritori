@@ -91,10 +91,6 @@ module.exports = (io, { state, getPlayer }) => {
             return denyJoin(socket, "このルームは存在しません。");
         }
 
-        if (room.sockets.length >= room.maxSockets) {
-            return denyJoin(socket, "このルームは満室です。");
-        }
-
         const pidChk = getPlayer(playerId);
         if (!pidChk.isValid) {
             return denyJoin(socket, "ログインしてください。");
@@ -105,6 +101,10 @@ module.exports = (io, { state, getPlayer }) => {
             return denyJoin(socket, "多重起動はできません。");
         }
 
+        if (room.sockets.length >= room.maxSockets) {
+            socket.emit(EVENTS.ROOM_JOIN_DENIED);
+            return socket.emit(EVENTS.ALERT_WARN, "このルームは満室です。");
+        }
         // spectator ですでにjoinしている
         //socket.join(roomId);
         socket.data.as = USER_ROLE.PLAYER;

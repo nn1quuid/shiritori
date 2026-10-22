@@ -63,6 +63,7 @@
 
     socket.on("room:join-denied", () => {
         joinBtn.disabled = false;
+        joinBtn.style.display = "";
     })
 
     function getCurrentTimeLabel() {
