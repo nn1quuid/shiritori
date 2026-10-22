@@ -1,26 +1,31 @@
 const utils = require("./utils");
-module.exports = (io, { state, getPlayer }) => {
-    const EVENTS = {
-        ROOM_JOIN_SPECTATOR: "room:join-spectator",
-        ROOM_JOIN_ACCEPT: "room:join-accept",
-        ROOM_JOIN_PLAYER: "room:join-player",
-        ROOM_LEAVE: "room:leave",
-        ROOM_ALONE: "room:alone",
-        ALERT_INFO: "info",
-        ALERT_ERROR: "error",
-        ALERT_WARN: "warn",
-        GAME_NOT_YOUR_TURN: "game:not-your-turn",
-        GAME_YOUR_TURN: "game:your-turn",
-        GAME_UPDATE_PLAYER_DATA: "game:update-playerData",
-        GAME_UPDATE_LATEST: "game:update-latest",
-        GAME_ADD_HISTORY: "game:add-history",
-        GAME_RESET_HISTORY: "game:reset-history",
-        GAME_RESET_OK: "game:reset-ok",
-        GAME_SUBMIT: "game:submit",
-        GAME_CHECK_ACTIVE: "game:check-active",
-        GAME_SEND_HISTORY: "game:send-history"
-    }
+const EVENTS = {
+    ROOM_JOIN_SPECTATOR: "room:join-spectator",
+    ROOM_JOIN_ACCEPT: "room:join-accept",
+    ROOM_JOIN_PLAYER: "room:join-player",
+    ROOM_LEAVE: "room:leave",
+    ROOM_ALONE: "room:alone",
+    ALERT_INFO: "info",
+    ALERT_ERROR: "error",
+    ALERT_WARN: "warn",
+    GAME_NOT_YOUR_TURN: "game:not-your-turn",
+    GAME_YOUR_TURN: "game:your-turn",
+    GAME_UPDATE_PLAYER_DATA: "game:update-playerData",
+    GAME_UPDATE_LATEST: "game:update-latest",
+    GAME_ADD_HISTORY: "game:add-history",
+    GAME_RESET_HISTORY: "game:reset-history",
+    GAME_RESET_OK: "game:reset-ok",
+    GAME_SUBMIT: "game:submit",
+    GAME_CHECK_ACTIVE: "game:check-active",
+    GAME_SEND_HISTORY: "game:send-history"
+}
 
+const USER_ROLE = {
+    PLAYER: "player",
+    SPECTATOR: "spectator"
+}
+
+module.exports = (io, { state, getPlayer }) => {
     io.on("connection", (socket) => {
         socket.on(EVENTS.ROOM_JOIN_SPECTATOR, ({ roomId, playerId }) => handleJoinSpectator(socket, roomId, playerId));
         socket.on(EVENTS.ROOM_JOIN_PLAYER, () => handleJoinRoom(socket));
@@ -62,7 +67,7 @@ module.exports = (io, { state, getPlayer }) => {
         // socketにデータを紐付け
         socket.data.roomId = roomId;
         socket.data.playerId = player.id;
-        socket.data.as = "spectator";
+        socket.data.as = USER_ROLE.SPECTATOR;
         console.log(`${player.displayName} joined room ${roomId} as spectator`);
 
         // 履歴読み込み
@@ -92,7 +97,7 @@ module.exports = (io, { state, getPlayer }) => {
 
         // spectator ですでにjoinしている
         //socket.join(roomId);
-        socket.data.as = "player";
+        socket.data.as = USER_ROLE.PLAYER;
         room.sockets.push(socket.id);
         player.sockets.push(socket.id);
         room.players.push(player);
@@ -195,11 +200,11 @@ module.exports = (io, { state, getPlayer }) => {
         if (!room || !player) {
             return;
         }
-        if (socket.data.as == "spectator") {
+        if (socket.data.as === USER_ROLE.SPECTATOR) {
             console.log(socket.id, "(spectator) left room", roomId, `[${room.sockets.length}/${room.maxSockets}]`);
             return;
         }
-        if (socket.data.as == "player") {
+        if (socket.data.as === USER_ROLE.PLAYER) {
             const leaveResponse = room.leave(socket.id, player);
             if (leaveResponse.ok) {
                 // player の場合
