@@ -9,7 +9,6 @@
   <style>
     body {
       font-family: "ubuntu sans", "M PLUS 1", sans-serif;
-      letter-spacing: 0.05rem;
     }
 
     .bnto-head-sideline {
@@ -45,18 +44,26 @@
         <span id="displayName"></span> さん、しりとりを始めましょう！
       </div>
 
-      <h2 class="bnto-head-sideline mt-3 mb-2">ルール</h2>
-      最後の文字が伸ばし棒の時は、<br>その直前の文字の母音から続けます。<br>
-      一方で、小さい文字の時は、<br>その文字を大きくして続けます。<br>
-      たとえば、<br>
-      「かれー」の次は「え」から始まる単語です。<br>
-      「かいしゃ」の次は「や」から始まる単語です。<br>
       <div>
-        <button class="btn btn-success rounded-pill px-3 my-5 mx-3" id="gameBtn" disabled>CPU対戦</button>
-        <button class="btn btn-secondary rounded-pill px-3 my-5 mx-3" id="pvp" disabled>オンライン対戦</button>
+        <button class="btn btn-success rounded-pill px-3 my-5 mx-3 fs-5" id="gameBtn" disabled>🤖 CPU対戦</button>
+        <button class="btn btn-primary rounded-pill px-3 my-5 mx-3 fs-5" id="pvp" disabled>🌏 オンライン対戦</button>
+      </div>
+
+      <div class="card mx-5">
+        <div class="card-header fs-5">
+          ルール
+        </div>
+        <div class="card-body">
+          <p class="card-text text-start">
+            最後の文字が伸ばし棒の時は、その直前の文字の母音から続けます。<br>
+            一方で、小さい文字の時は、その文字を大きくして続けます。<br>
+            たとえば、<br>
+            「かれー」の次は「え」から始まる単語です。<br>
+            「かいしゃ」の次は「や」から始まる単語です。<br>
+          </p>
+        </div>
       </div>
     </div>
-
   </div>
   <%- include("partials/footer") %>
   <script>
@@ -99,7 +106,6 @@
         };
         gameBtn.disabled = false;
         pvpBtn.disabled = false;
-        gameBtn.focus();
       }
     })
 
