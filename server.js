@@ -82,7 +82,6 @@ class Room {
         timestamp: utils.getUnix().timestamp,
         str: ""
     };
-    hostId;
     sockets = [];
     players = []; // instance
     turn = 0;
@@ -109,6 +108,14 @@ class Room {
         }
         return msg;
     }
+
+    delete() {
+        const result = state.roomsMap.delete(this.id);
+        if (result) {
+            console.log("[Room Delete]", this.id);
+        } 
+    }
+
     roomInit() {
         this.usedWords = ["しりとり"];
         this.sockets = [];
@@ -276,7 +283,6 @@ class Player {
     const roomname = "test room"
     const roomId = "0";
     const newRoom = new Room(roomId, roomname);
-    newRoom.hostId = "65535u0t" + state.gameServerStartAt;
     state.roomsMap.set(roomId, newRoom);
     console.log("New Room:", roomId, roomname);
 }())
@@ -808,7 +814,6 @@ app.post("/new/room", (req, res) => {
     }
     const roomId = utils.getUnix().hex;
     const newRoom = new Room(roomId, roomname, maxSockets);
-    newRoom.hostId = pid;
     state.roomsMap.set(roomId, newRoom);
     console.log("New Room:", roomId, roomname, maxSockets);
     return res.redirect(`/room/${roomId}`);

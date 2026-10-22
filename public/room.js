@@ -198,7 +198,7 @@
         });
     })
 
-    socket.on("room:alone", () => {
+    socket.on("room:reset-active", () => {
         resetBtn.hidden = false;
     })
 

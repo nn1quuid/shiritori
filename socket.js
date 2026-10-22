@@ -5,7 +5,7 @@ const EVENTS = {
     ROOM_JOIN_DENIED: "room:join-denied",
     ROOM_JOIN_PLAYER: "room:join-player",
     ROOM_LEAVE: "room:leave",
-    ROOM_ALONE: "room:alone",
+    ROOM_RESET_ACTIVE: "room:reset-active",
     ALERT_INFO: "info",
     ALERT_ERROR: "error",
     ALERT_WARN: "warn",
@@ -33,7 +33,7 @@ module.exports = (io, { state, getPlayer }) => {
         socket.on(EVENTS.ROOM_LEAVE, () => handleLeaveRoom(socket));
         socket.on(EVENTS.GAME_SUBMIT, ({ msg }) => handleSubmit(socket, msg));
         socket.on(EVENTS.GAME_RESET_HISTORY, () => handleReset(socket));
-        socket.on("disconnect", (reason) => handleDisconnect(socket, reason));
+        socket.on("disconnect", () => handleDisconnect(socket));
     });
 
     const handleReset = (socket) => {
@@ -79,7 +79,7 @@ module.exports = (io, { state, getPlayer }) => {
         const { roomId, playerId } = socket.data;
         const room = state.roomsMap.get(roomId);
         const denyJoin = (socket, msg) => {
-            socket.emit(ROOM_JOIN_DENIED);
+            socket.emit(EVENTS.ROOM_JOIN_DENIED);
             return sendError(socket, msg);
         }
         if (!room) {
@@ -139,13 +139,16 @@ module.exports = (io, { state, getPlayer }) => {
         }
         const playerNames = room.players.map(p => p.displayName);
         const ctp = room.getCurrentTurnPlayer();
-        const ctpIndex = room.players.indexOf(ctp)
+
+        const ctpIndex = room.players.indexOf(ctp);
+
         const ctpSocketId = room.sockets[ctpIndex];
         const gameData = {
             playerNames,
             ctp: ctp?.displayName,
             ctpIndex
         }
+        
         io.to(roomId).emit(EVENTS.GAME_NOT_YOUR_TURN);
         if (playerNames.length >= 2) {
             io.to(ctpSocketId).emit(EVENTS.GAME_YOUR_TURN);
@@ -177,7 +180,19 @@ module.exports = (io, { state, getPlayer }) => {
             updatePlayerData(roomId);
 
             if (hiragana.at(-1) == "ん") {
-                // io.to(roomId).emit() // work in progress
+                loserId = playerId;
+                const loserName = getPlayer(playerId)?.player?.displayName;
+                if (!loserName) {
+                    console.warn(`Loser Name: ${loserName}`);
+                    return;
+                }
+                io.to(roomId).emit(EVENTS.ALERT_INFO, `残念！${loserName} さんの負けです`);
+
+                if (room.players.length == 2) {
+                    io.to(roomId).emit(EVENTS.GAME_NOT_YOUR_TURN);
+                    const hostId = room.sockets[0] // socket.id
+                    io.to(hostId).emit(EVENTS.ROOM_RESET_ACTIVE);
+                }
             }
         } else {
             const nav = res.reason ?? "エラーが発生しました";
@@ -187,7 +202,6 @@ module.exports = (io, { state, getPlayer }) => {
 
     const updateActivity = (player) => {
         player.updateActivity();
-        
     }
 
     const sendError = (socket, message) => {
@@ -195,7 +209,7 @@ module.exports = (io, { state, getPlayer }) => {
         return socket.disconnect();
     };
 
-    const handleDisconnect = (socket, reason = undefined) => {
+    const handleDisconnect = (socket) => {
         const { roomId, playerId } = socket.data;
         if (!roomId || !playerId) {
             return
@@ -226,8 +240,14 @@ module.exports = (io, { state, getPlayer }) => {
             room.roomInit();
             socket.to(roomId).emit(EVENTS.ALERT_INFO, "ゲームを初期化しました");
             io.to(roomId).emit(EVENTS.GAME_UPDATE_LATEST, room.latestWord());
+            setTimeout(()=>{
+                if (room.sockets.length == 0) {
+                    socket.to(roomId).emit(EVENTS.ALERT_INFO, "しばらくの間、参加者が居なかったため、ルームが削除されました。");
+                    room.delete();
+                }
+            }, 10000);
         } else if (room?.sockets?.length == 1) {
-            io.to(socket.data.roomId).emit(EVENTS.ROOM_ALONE);
+            io.to(socket.data.roomId).emit(EVENTS.ROOM_RESET_ACTIVE);
         }
     }
 };
