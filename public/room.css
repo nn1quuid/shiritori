@@ -1,0 +1,33 @@
+body {
+    font-family: "ubuntu sans", "m plus 1", sans-serif;
+}
+
+.col {
+    max-width: max(20%, 20rem);
+}
+
+.history {
+    height: 5em;
+    overflow-y: auto;
+}
+
+/* turn */
+.turn-you {
+    background-color: #ddffe0;
+}
+.turn-other {
+    background-color: #ededed;
+}
+
+/* latest */
+#latest {
+    display: inline-block;
+    transition:
+        opacity 0.15s ease,
+        transform 0.15s ease;
+}
+
+#latest.changing {
+    opacity: 0;
+    transform: translateY(-4px);
+}
