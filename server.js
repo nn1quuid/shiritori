@@ -2,7 +2,7 @@ const express = require("express");
 const { Server } = require("socket.io");
 const fs = require("fs");
 
-const cowsay=require("cowsay");
+const cowsay = require("cowsay");
 
 const utils = require("./utils");
 const state = require("./state");
@@ -27,7 +27,7 @@ app.set("view engine", "ejs");
 state.gameServerStartAt = utils.getUnix().hex;
 console.log(cowsay.say({
     text: "This server is " + state.gameServerStartAt,
-    f:"small",
+    f: "small",
     y: true
 }));
 
@@ -117,10 +117,10 @@ class Room {
         this.turnIndex = 0;
         console.log("[Room Init]", this.id);
     }
-    wordInit(){
-        this.usedWords=["しりとり"];
-        this.turn=0;
-        this.turnIndex=0;
+    wordInit() {
+        this.usedWords = ["しりとり"];
+        this.turn = 0;
+        this.turnIndex = 0;
     }
 
     latestWord() {
@@ -168,11 +168,11 @@ class Room {
      */
     submit(pid, word) {
         console.log("Submit Start:", pid, word);
-        function fail(reason=undefined){
-            return {ok:false, reason}
+        function fail(reason = undefined) {
+            return { ok: false, reason }
         }
-        function success(){
-            return {ok:true, reason: undefined}
+        function success() {
+            return { ok: true, reason: undefined }
         }
         if (!pid || !word) {
             return fail();
@@ -210,7 +210,7 @@ class Room {
             return fail("しりとりが成立していません。");
         }
 
-        if (this.usedWords.includes(normalized.hiragana)){
+        if (this.usedWords.includes(normalized.hiragana)) {
             return fail("この単語は既に使われています。");
         }
 
@@ -250,7 +250,7 @@ class Player {
         this.displayName = displayName;
     }
 
-    updateActivity(){
+    updateActivity() {
         this.lastActivity = utils.getUnix().timestamp;
     }
 
@@ -670,6 +670,46 @@ app.post("/cpu", (req, res) => {
     return res.render("cpu", gameData);
 })
 
+app.get("/test/status", (req, res) => {
+    const keys = Object.keys(wordsDict).flat();
+    const allWords = Object.values(wordsDict).flat();
+
+    const msgs = [`
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>`,
+        "<table border='1' id='statusTable'><thead><tr>",
+        "<td>開始文字</td> <td>使用可能単語数</td> <td>単語総数</td> <td>使用可能割合</td> <td>帰着単語数</td> <td>平均文字数</td> <td>最頻文字長</td>",
+        "</tr></thead><tbody>"
+    ];
+    for (const key of keys) {
+        const arr = Object.values(wordsDict[key]).flat();
+        const availableWords = arr.filter(word => !word.endsWith("ん"));
+        const continueWords = allWords.filter(word => wordNormalize(word).nextFirstChar == key)
+        let total = 0;
+        for (const word of availableWords) {
+            total += word.length;
+        }
+        const averageLength = Math.round(total / availableWords.length * 10) / 10;
+        const wordsLenArr = availableWords.map(word => word.length);
+        const modes = utils.mode(wordsLenArr);
+        const msg = `<tr> <th>${key}</th> <td>${availableWords.length}</td> <td>${arr.length}</td> <td>${Math.round(availableWords.length / arr.length * 1000) / 10}%</td> <td>${continueWords.length}</td> <td>${averageLength}</td> <td>${modes.modes.join(", ")} (${modes.count}個)</td> </tr>`;
+        msgs.push(msg);
+    }
+    msgs.push("</tbody></table>");
+    msgs.push(`
+        <script>
+        $(function(){
+        $("#statusTable").DataTable({
+            paging: false,
+            searching: false
+        });
+        });
+        </script>
+    `)
+    return res.send(msgs.join(""));
+})
+
 app.post("/api/history", (req, res) => {
     const { pid, turn } = req.body ?? {};
     let resType = "error";
@@ -685,7 +725,7 @@ app.post("/api/history", (req, res) => {
         return res.status(400).json({ history: undefined, resType });
     }
     resType = "ok";
-    const history = player.gameUsedWords.join("<br>");
+    const history = player.gameUsedWords;
     return res.status(201).json({
         history,
         resType
@@ -742,7 +782,7 @@ app.post("/new/room", (req, res) => {
         return res.render("rooms", { roomsArray, token: reToken, msg });
     }
     state.tokens.delete(token);
-    roomname=roomname.trim().slice(0, 16);
+    roomname = roomname.trim().slice(0, 16);
     if (roomname === "") {
         return res.render("rooms", {
             roomsArray: [...state.roomsMap.values()],
@@ -754,7 +794,7 @@ app.post("/new/room", (req, res) => {
     if (!pidChk.isValid) {
         return res.redirect("/");
     }
-    if (!Number.isInteger(Number(maxSockets))){
+    if (!Number.isInteger(Number(maxSockets))) {
         return res.render("rooms", {
             roomsArray: [...state.roomsMap.values()],
             token: newToken("srrm"),

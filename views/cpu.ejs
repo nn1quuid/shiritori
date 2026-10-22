@@ -1,176 +1,198 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <%- include("partials/header") %>
-  <title>しりとり | CPU対戦</title>
-  <style>
-    body{
-      font-family: "ubuntu sans", "m plus 1", sans-serif;
-    }
-    hr{
-      margin-top: 0.25rem;
-      margin-bottom: 0.5rem;
-    }
-    .bnto-hr-gradient {
-      height: 100%; border: none;
-      color: white;
-      background: linear-gradient(90deg,
-        transparent, hsl(169, 63%, 22%), transparent);
-    }
+    <title>しりとり | CPU対戦</title>
+    <style>
+      body {
+        font-family: "ubuntu sans", "m plus 1", sans-serif;
+      }
 
-    #main{
-      max-width: 30rem;
-    }
+      hr {
+        margin-top: 0.25rem;
+        margin-bottom: 0.5rem;
+      }
 
-    /* History */
-    #history-btn{
-      position: absolute;
-      top: 60px;
-      left: 1rem;
-    }
-    #srtr-history{
-      position: absolute;
-      background-color: #fafafa;
-      top: 5rem; left:-50rem;
-    }
-  </style>
+      .bnto-hr-gradient {
+        height: 100%;
+        border: none;
+        color: white;
+        background: linear-gradient(90deg,
+            transparent, hsl(169, 63%, 22%), transparent);
+      }
+
+      #main {
+        max-width: 30rem;
+      }
+    </style>
 </head>
+
 <body>
   <div>
     <%- include("partials/navbar") %>
-    <%- include("partials/icon") %>
-    <h1 class="text-center bnto-hr-gradient">CPU対戦</h1>
-    
+      <%- include("partials/icon") %>
+        <h1 class="text-center bnto-hr-gradient">CPU対戦</h1>
 
-    <div id="history-btn">
-      <button class="btn btn-primary border rounded-pill">履歴</button>
-    </div>
-    <div id="srtr-history" class="border border-2 border-info rounded-5 px-5 py-3 text-center">
-      <h4>履歴</h4><hr>
-      <div id="history-words">
-        
-      </div>
-    </div>
-    
-    <div class="d-flex flex-column align-items-center">
-      <div class="alert alert-danger" id="login" style="display: none;">始める前に<a href="/" id="loginLink">ログイン</a>してください</div>
-      <% if(navType=="info" && nav) { %>
-        <div class="alert alert-info" id="infoBox"><%= nav %></div>
-      <% } else if (navType == "warn" && nav) { %>
-        <div class="alert alert-warning" id="infoBox"><%= nav %></div>
-      <% } else if(navType=="error" && nav) { %>
-        <div class="alert alert-danger" id="infoBox"><%= nav %></div>
-      <% } else if(navType=="win" && nav) { %>
-        <div class="alert alert-success" id="infoBox"><%= nav %></div>
-      <% } %>
-      <div class="text-center px-5 py-3 my-2 border border-3 border-info rounded-pill" id="main">
-        <span id="turn"><%= turn %></span>ターン目<hr>
-        <span class="fw-bold fs-4"><%= word %></span><br>
-        ↓↓↓
-        <form action="/cpu" method="POST" id="form">
-          <input id="pid" name="playerId" value="" type="hidden">
-          <input id="userword" class="my-2" type="text" name="word" placeholder="単語" autofocus autocomplete="off" maxlength="25"><br>
-          <button id="submitBtn" class="btn btn-primary" type="submit" disabled>送信 [Enter]</button>
-        </form>
-      </div>
-      <button class="btn btn-danger mt-lg-5" onclick="restart(this)">はじめから</button>
-    </div>
+        <div class="offcanvas offcanvas-start" tabindex="-1" id="srtr-history" aria-labelledby="srtrLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="srtrLabel">履歴</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <div id="history-words">
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex flex-column align-items-center">
+          <div class="alert alert-danger" id="login" style="display: none;">始める前に<a href="/"
+              id="loginLink">ログイン</a>してください</div>
+          <% if(navType=="info" && nav) { %>
+            <div class="alert alert-info" id="infoBox">
+              <%= nav %>
+            </div>
+            <% } else if (navType=="warn" && nav) { %>
+              <div class="alert alert-warning" id="infoBox">
+                <%= nav %>
+              </div>
+              <% } else if(navType=="error" && nav) { %>
+                <div class="alert alert-danger" id="infoBox">
+                  <%= nav %>
+                </div>
+                <% } else if(navType=="win" && nav) { %>
+                  <div class="alert alert-success" id="infoBox">
+                    <%= nav %>
+                  </div>
+                  <% } %>
+                    <div class="text-center px-5 py-3 my-2 border border-3 border-info rounded-pill" id="main">
+                      <span id="turn">
+                        <%= turn %>
+                      </span>ターン目
+                      <hr>
+                      <span class="fw-bold fs-4">
+                        <%= word %>
+                      </span><br>
+                      ↓↓↓
+                      <form action="/cpu" method="POST" id="form">
+                        <input id="pid" name="playerId" value="" type="hidden">
+                        <input id="userword" class="my-2" type="text" name="word" placeholder="単語" autofocus
+                          autocomplete="off" maxlength="25"><br>
+                        <button id="submitBtn" class="btn btn-primary" type="submit" disabled>送信 [Enter]</button>
+                      </form>
+                    </div>
+
+                    <button class="btn btn-outline-primary" id="history-btn" type="button" data-bs-toggle="offcanvas"
+                      data-bs-target="#srtr-history" aria-controls="srtr">
+                      履歴
+                    </button>
+
+                    <button class="btn btn-danger mt-5" onclick="restart(this)">はじめから</button>
+        </div>
   </div>
   <%- include("partials/footer") %>
-  <script>
-    let wordEl=document.getElementById("userword");
-    document.getElementById("form").addEventListener("submit", (e)=>{
-      document.getElementById("submitBtn").disabled=true;
-      wordEl.value=wordEl.value.trim();
-      if(wordEl.value.length>25){
-        document.getElementById("login").textContent="単語が長すぎます！";
-        document.getElementById("login").style.display="";
-        wordEl.value="";
-        e.preventDefault();
-        document.getElementById("submitBtn").disabled=false;
-      }
-    })
-    let attempt=0;
-    function restart(e){
-      attempt++;
-      if(attempt==1){
-        e.innerText="本当に初期化してよろしいですか？";
-        document.getElementById("userword").focus();
-      } else if(attempt==2){
-        location.href="/init?pid="+localStorage.getItem("pid");
-      }
-    }
-    async function getUserData(){
-      let pidFD = new FormData();
-      pidFD.append("pid", localStorage.getItem("pid"));
-      const pidChk = await fetch("/api/pid", {
-        method: "POST",
-        body: new URLSearchParams(pidFD)
+    <script>
+      let wordEl = document.getElementById("userword");
+      document.getElementById("form").addEventListener("submit", (e) => {
+        document.getElementById("submitBtn").disabled = true;
+        wordEl.value = wordEl.value.trim();
+        if (wordEl.value.length > 25) {
+          document.getElementById("login").textContent = "単語が長すぎます！";
+          document.getElementById("login").style.display = "";
+          wordEl.value = "";
+          e.preventDefault();
+          document.getElementById("submitBtn").disabled = false;
+        }
       })
+      let attempt = 0;
+      function restart(e) {
+        attempt++;
+        if (attempt == 1) {
+          e.innerText = "本当に初期化してよろしいですか？";
+          document.getElementById("userword").focus();
+        } else if (attempt == 2) {
+          location.href = "/init?pid=" + localStorage.getItem("pid");
+        }
+      }
+      async function getUserData() {
+        let pidFD = new FormData();
+        pidFD.append("pid", localStorage.getItem("pid"));
+        const pidChk = await fetch("/api/pid", {
+          method: "POST",
+          body: new URLSearchParams(pidFD)
+        })
 
-      const result = await pidChk.json();
+        const result = await pidChk.json();
 
-      if (!result.ok) {
-        document.getElementById("login").style.display="";
-        document.getElementById("loginLink").focus();
-        //document.getElementById("infoBox").style.display="none";
-        document.getElementById("submitBtn").disabled=true;
-        document.getElementById("userword").disabled=true;
-      } else {
-          document.getElementById("who").textContent=result.player.displayName;
-          document.getElementById("whoid").textContent="@"+result.player.id;
-          document.getElementById("pid").value=result.player.id;
-          document.getElementById("submitBtn").disabled=false;
-          
+        if (!result.ok) {
+          document.getElementById("login").style.display = "";
+          document.getElementById("loginLink").focus();
+          //document.getElementById("infoBox").style.display="none";
+          document.getElementById("submitBtn").disabled = true;
+          document.getElementById("userword").disabled = true;
+        } else {
+          document.getElementById("who").textContent = result.player.displayName;
+          document.getElementById("whoid").textContent = "@" + result.player.id;
+          document.getElementById("pid").value = result.player.id;
+          document.getElementById("submitBtn").disabled = false;
+
           const userMenu = document.querySelector(".bnto-user");
-          let theme=result.player.themeColor;
+          let theme = result.player.themeColor;
           userMenu.style.setProperty("--c1", theme);
 
-      }
-    }
-    window.addEventListener("DOMContentLoaded", async ()=>{
-      await getUserData();
-    });
-    const nt="<%= navType %>"
-    if(nt=="error"){
-      document.getElementById("submitBtn").disabled=true;
-      document.getElementById("userword").disabled=true;
-    } else if (nt == "win"){
-      document.getElementById("submitBtn").disabled=true;
-      document.getElementById("userword").disabled=true;
-    }
-    
-  </script>
-  <script>
-    // history btn
-    const btn=document.getElementById("history-btn");
-    const srtrEl=document.getElementById("srtr-history");
-    const historyEl=document.getElementById("history-words");
-    btn.addEventListener("click", async ()=>{
-      srtrEl.style.left = srtrEl.style.left == "1rem" ? "-50rem" : "1rem";
-      if(historyEl.textContent.trim()==""){
-        historyEl.textContent="読み込み中……";
-        const fd=new FormData();
-        fd.append("pid", localStorage.getItem("pid"));
-        fd.append("turn", document.getElementById("turn").textContent);
-        const res=await fetch("/api/history", {
-          method:"POST",
-          body: new URLSearchParams(fd)
-        })
-        const result=await res.json();
-        if(result.resType=="error"){
-          historyEl.textContent="読み込みに失敗しました";
-          return
-        } else if (result.history.length==0){
-          historyEl.textContent="まだ履歴がないようです。"
-          return
         }
-        historyEl.innerHTML=result.history;
-        console.log(result);
       }
-    })
-  </script>
+      window.addEventListener("DOMContentLoaded", async () => {
+        await getUserData();
+      });
+      const nt = "<%= navType %>"
+      if (nt == "error") {
+        document.getElementById("submitBtn").disabled = true;
+        document.getElementById("userword").disabled = true;
+      } else if (nt == "win") {
+        document.getElementById("submitBtn").disabled = true;
+        document.getElementById("userword").disabled = true;
+      }
+
+    </script>
+    <script>
+      const btn = document.getElementById("history-btn");
+      const historyEl = document.getElementById("history-words");
+      btn.addEventListener("click", async () => {
+        if (historyEl.textContent.trim() == "") {
+          historyEl.textContent = "読み込み中……";
+          const fd = new FormData();
+          fd.append("pid", localStorage.getItem("pid"));
+          fd.append("turn", document.getElementById("turn").textContent);
+          const res = await fetch("/api/history", {
+            method: "POST",
+            body: new URLSearchParams(fd)
+          })
+          const result = await res.json();
+          if (result.resType == "error") {
+            historyEl.textContent = "読み込みに失敗しました";
+            return
+          } else if (result.history.length == 0) {
+            historyEl.textContent = "まだ履歴がないようです。"
+            return
+          }
+          historyEl.innerHTML = "";
+
+          addHistoryArray(result.history);
+        }
+      })
+
+      const addHistoryArray = (arr) => {
+        for (const word of arr) {
+          const li = document.createElement("li");
+          li.className = "list-group-item";
+          li.textContent = word;
+          historyEl.appendChild(li);
+        }
+      }
+    </script>
 </body>
+
 </html>
