@@ -197,9 +197,15 @@
             }
         });
     })
-
+    socket.on("game:plz-wait", ()=>{
+        resetBtn.hidden = false;
+        resetBtn.disabled = true;
+        resetBtn.textContent = "ホストの選択を待機中です……";
+    })
     socket.on("room:reset-active", () => {
         resetBtn.hidden = false;
+        resetBtn.disabled = false;
+        resetBtn.textContent = "履歴をリセットする";
     })
 
     resetBtn.addEventListener("click", reset);
@@ -210,6 +216,7 @@
         wordHistory.textContent = "";
         addHistory("しりとり");
         resetBtn.hidden = true;
+        resetBtn.disabled = true;
     })
 
     socket.on("disconnect", () => {

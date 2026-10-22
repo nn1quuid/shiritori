@@ -18,7 +18,8 @@ const EVENTS = {
     GAME_RESET_OK: "game:reset-ok",
     GAME_SUBMIT: "game:submit",
     GAME_CHECK_ACTIVE: "game:check-active",
-    GAME_SEND_HISTORY: "game:send-history"
+    GAME_SEND_HISTORY: "game:send-history",
+    GAME_PLZ_WAIT: "game:plz-wait"
 }
 
 const USER_ROLE = {
@@ -39,7 +40,7 @@ module.exports = (io, { state, getPlayer }) => {
     const handleReset = (socket) => {
         const {roomId} = socket.data;
         const room = state.roomsMap.get(roomId);
-        if (room.sockets.length == 1) {
+        if (room.sockets.length == 1 || room.latestWord().endsWith("ん")) {
             // reset処理
             room.usedWords = ["しりとり"];
             room.turn = 0;
@@ -47,6 +48,10 @@ module.exports = (io, { state, getPlayer }) => {
 
             io.to(roomId).emit(EVENTS.GAME_UPDATE_LATEST, room.latestWord());
             io.to(roomId).emit(EVENTS.ALERT_INFO, "履歴をリセットしました！");
+            updatePlayerData(roomId);
+            room.players.forEach(player => {
+                updateActivity(player);
+            });
             io.to(roomId).emit(EVENTS.GAME_RESET_OK);
         }
     }
@@ -188,11 +193,10 @@ module.exports = (io, { state, getPlayer }) => {
                 }
                 io.to(roomId).emit(EVENTS.ALERT_INFO, `残念！${loserName} さんの負けです`);
 
-                if (room.players.length == 2) {
-                    io.to(roomId).emit(EVENTS.GAME_NOT_YOUR_TURN);
-                    const hostId = room.sockets[0] // socket.id
-                    io.to(hostId).emit(EVENTS.ROOM_RESET_ACTIVE);
-                }
+                io.to(roomId).emit(EVENTS.GAME_NOT_YOUR_TURN);
+                const hostId = room.sockets[0] // socket.id
+                io.to(hostId).emit(EVENTS.ROOM_RESET_ACTIVE);
+                io.except(hostId).emit(EVENTS.GAME_PLZ_WAIT);
             }
         } else {
             const nav = res.reason ?? "エラーが発生しました";
