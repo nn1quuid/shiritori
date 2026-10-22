@@ -2,6 +2,7 @@ const utils = require("./utils");
 const EVENTS = {
     ROOM_JOIN_SPECTATOR: "room:join-spectator",
     ROOM_JOIN_ACCEPT: "room:join-accept",
+    ROOM_JOIN_DENIED: "room:join-denied",
     ROOM_JOIN_PLAYER: "room:join-player",
     ROOM_LEAVE: "room:leave",
     ROOM_ALONE: "room:alone",
@@ -72,27 +73,31 @@ module.exports = (io, { state, getPlayer }) => {
 
         // 履歴読み込み
         const history = room.usedWords;
-        io.to(socket.id).emit(EVENTS.GAME_SEND_HISTORY, history);
+        socket.emit(EVENTS.GAME_SEND_HISTORY, history);
     }
     const handleJoinRoom = (socket) => {
         const { roomId, playerId } = socket.data;
         const room = state.roomsMap.get(roomId);
+        const denyJoin = (socket, msg) => {
+            socket.emit(ROOM_JOIN_DENIED);
+            return sendError(socket, msg);
+        }
         if (!room) {
-            return sendError(socket, "このルームは存在しません。");
+            return denyJoin(socket, "このルームは存在しません。");
         }
 
         if (room.sockets.length >= room.maxSockets) {
-            return sendError(socket, "このルームは満室です。");
+            return denyJoin(socket, "このルームは満室です。");
         }
 
         const pidChk = getPlayer(playerId);
         if (!pidChk.isValid) {
-            return sendError(socket, "ログインしてください。");
+            return denyJoin(socket, "ログインしてください。");
         }
 
         const player = pidChk.player;
         if (player.sockets.length >= 1) {
-            return sendError(socket, "多重起動はできません。");
+            return denyJoin(socket, "多重起動はできません。");
         }
 
         // spectator ですでにjoinしている
@@ -110,7 +115,7 @@ module.exports = (io, { state, getPlayer }) => {
         updatePlayerData(roomId);
         updateActivity(player);
 
-        const checkActiveLoop = setInterval(() => {
+        socket.data.checkActiveLoop = setInterval(() => {
             const now = utils.getUnix().timestamp;
             if (room.players.length == 1) {
                 // 入った途端に kickされるのを防止する
@@ -123,7 +128,7 @@ module.exports = (io, { state, getPlayer }) => {
             }
             if (now - player.lastActivity > room.maxInactiveSec) {
                 socket.disconnect();
-                clearInterval(checkActiveLoop);
+                clearInterval(socket.data.checkActiveLoop);
             }
         }, 5000)
     };
@@ -176,7 +181,7 @@ module.exports = (io, { state, getPlayer }) => {
             }
         } else {
             const nav = res.reason ?? "エラーが発生しました";
-            io.to(socket.id).emit(EVENTS.ALERT_WARN, nav);
+            socket.emit(EVENTS.ALERT_WARN, nav);
         }
     };
 
@@ -205,6 +210,9 @@ module.exports = (io, { state, getPlayer }) => {
             return;
         }
         if (socket.data.as === USER_ROLE.PLAYER) {
+            if (socket.data.checkActiveLoop) {
+                clearInterval(socket.data.checkActiveLoop);
+            }
             const leaveResponse = room.leave(socket.id, player);
             if (leaveResponse.ok) {
                 // player の場合
