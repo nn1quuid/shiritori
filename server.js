@@ -113,7 +113,7 @@ class Room {
         const result = state.roomsMap.delete(this.id);
         if (result) {
             console.log("[Room Delete]", this.id);
-        } 
+        }
     }
 
     roomInit() {
@@ -280,7 +280,7 @@ class Player {
 
 // make a room
 (function () {
-    const roomname = "test room"
+    const roomname = "Example Room"
     const roomId = "0";
     const newRoom = new Room(roomId, roomname);
     state.roomsMap.set(roomId, newRoom);
@@ -394,12 +394,6 @@ function wordNormalize(inputWord) {
     return result;
 }
 
-app.get("/dev", (req, res) => {
-    const pid = req.query.pid ?? "0u0t00000000"
-    const pidChk = getPlayer(pid);
-    return res.send(JSON.stringify(pidChk));
-})
-
 app.get("/dict", (req, res) => {
     let min = 100;
     let max = 0;
@@ -436,25 +430,25 @@ app.get("/dict", (req, res) => {
     return res.send(content);
 })
 
-app.get("/status", (req, res) => {
-    let content = "<html><body><h1>Server [" + state.gameServerStartAt + "]</h1><hr>";
-    content += `TOKEN:${JSON.stringify([...state.tokens.keys()])}<hr>ROOM:`;
-    const roomsArray = [...state.roomsMap.values()]
-    roomsArray.forEach(room => {
-        content += `<small>${JSON.stringify(room)}</small><hr>PLAYER:`;
-    })
+// app.get("/status", (req, res) => {
+//     let content = "<html><body><h1>Server [" + state.gameServerStartAt + "]</h1><hr>";
+//     content += `TOKEN:${JSON.stringify([...state.tokens.keys()])}<hr>ROOM:`;
+//     const roomsArray = [...state.roomsMap.values()]
+//     roomsArray.forEach(room => {
+//         content += `<small>${JSON.stringify(room)}</small><hr>PLAYER:`;
+//     })
 
-    const playersArray = [...state.playersMap.values()]
-    playersArray.forEach(player => {
-        let pn = `<div>${player.displayName} (@${player.id})`
-        let p = JSON.stringify(player);
-        content += `${pn}<div><small>${p}</small></div></div><hr>`;
-    })
+//     const playersArray = [...state.playersMap.values()]
+//     playersArray.forEach(player => {
+//         let pn = `<div>${player.displayName} (@${player.id})`
+//         let p = JSON.stringify(player);
+//         content += `${pn}<div><small>${p}</small></div></div><hr>`;
+//     })
 
-    content += "<a href='/'>TOP</a>&emsp;<a href='/cpu'>CPU</a>&emsp;<a href='/dict'>Dict</a>"
-    content += "</body></html>"
-    return res.status(200).send(content)
-})
+//     content += "<a href='/'>TOP</a>&emsp;<a href='/cpu'>CPU</a>&emsp;<a href='/dict'>Dict</a>"
+//     content += "</body></html>"
+//     return res.status(200).send(content)
+// })
 
 app.get("/init", (req, res) => {
     const { pid } = req.query ?? {};
@@ -534,6 +528,44 @@ app.get("/cpu", (req, res) => {
     gameData.turn = player.turn;
     return res.render("cpu", gameData);
 })
+
+function CPUresponse(history) {
+    let word = history.at(-1);
+    const normalized = wordNormalize(word);
+    const candidates = wordsDict[normalized.nextFirstChar];
+    let result;
+    let attempt = 0;
+    while (!result || result.at(-1) == "ん" || history.includes(result)) {
+        if (attempt > 20) {
+            result = false;
+            break;
+        }
+        if (!normalized.nextFirstChar) {
+            result = false;
+            break;
+        }
+        result = utils.choice(candidates);
+        attempt++;
+    }
+    return result;
+}
+
+function battle() {
+    let history = ["しりとり"];
+    let result = "";
+    let loop = 0;
+    while (result !== false) {
+        result = CPUresponse(history);
+        history.push(result);
+        loop++;
+    }
+    console.log(history.join("→"), loop, "回");
+    return {
+        loop,
+        history
+    };
+}
+
 app.post("/cpu", (req, res) => {
     const gameData = {
         word: "",
@@ -976,5 +1008,6 @@ const socketHandler = require("./socket");
 socketHandler(io, { state, getPlayer });
 
 server.listen(PORT, () => {
+    console.log(`Node version: ${process.version}`);
     console.log("http://localhost:" + PORT);
 });
