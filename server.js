@@ -1007,6 +1007,11 @@ app.get("/", (req, res) => {
 const socketHandler = require("./socket");
 socketHandler(io, { state, getPlayer });
 
+app.use((req, res) => {
+    res.status(404).render("404");
+    console.log("404", req.url);
+})
+
 server.listen(PORT, () => {
     console.log(`Node version: ${process.version}`);
     console.log("http://localhost:" + PORT);

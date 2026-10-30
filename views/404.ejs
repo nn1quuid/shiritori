@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>しりとりゲーム</title>
+  <%- include("partials/header") %>
+  <style>
+    body {
+      font-family: "ubuntu sans", "M PLUS 1", sans-serif;
+      letter-spacing: 0.05rem;
+    }
+  </style>
+</head>
+
+<body>
+  <h1 class="h1 text-center my-3">404 Not Found</h1>
+  <div class="text-center">
+    10秒後にTOPへ自動で転送します。<br>
+    <button class="btn btn-primary my-3" id="return">もどる</button>
+  </div>
+
+  <%- include("partials/footer") %>
+  <script>
+    const backToTop = () => {
+      location.href = "/";
+    }
+    document.getElementById("return").addEventListener("click", backToTop);
+    window.addEventListener("DOMContentLoaded", ()=>{
+      setTimeout(backToTop, 10000);
+    })
+  </script>
+</body>
