@@ -38,8 +38,11 @@ module.exports = (io, { state, getPlayer }) => {
     });
 
     const handleReset = (socket) => {
-        const {roomId} = socket.data;
+        const { roomId } = socket.data;
         const room = state.roomsMap.get(roomId);
+        if (!room) {
+            return
+        }
         if (room.sockets.length == 1 || room.latestWord().endsWith("ん")) {
             // reset処理
             room.usedWords = ["しりとり"];
@@ -153,7 +156,7 @@ module.exports = (io, { state, getPlayer }) => {
             ctp: ctp?.displayName,
             ctpIndex
         }
-        
+
         io.to(roomId).emit(EVENTS.GAME_NOT_YOUR_TURN);
         if (playerNames.length >= 2) {
             io.to(ctpSocketId).emit(EVENTS.GAME_YOUR_TURN);
@@ -161,7 +164,7 @@ module.exports = (io, { state, getPlayer }) => {
         io.to(roomId).emit(EVENTS.GAME_UPDATE_PLAYER_DATA, gameData);
     }
     const handleLeaveRoom = (socket) => {
-        socket.disconnect();        
+        socket.disconnect();
         return;
     };
 
@@ -244,7 +247,7 @@ module.exports = (io, { state, getPlayer }) => {
             room.roomInit();
             socket.to(roomId).emit(EVENTS.ALERT_INFO, "ゲームを初期化しました");
             io.to(roomId).emit(EVENTS.GAME_UPDATE_LATEST, room.latestWord());
-            setTimeout(()=>{
+            setTimeout(() => {
                 if (room.sockets.length == 0) {
                     socket.to(roomId).emit(EVENTS.ALERT_INFO, "しばらくの間、参加者が居なかったため、ルームが削除されました。");
                     room.delete();
