@@ -46,7 +46,7 @@ function newToken(unique = "uq") {
 // japanese init
 const aks = [..."あかさたなはまやらわがざだばぱぁゃ"];
 const iks = [..."いきしちにひみりぎじぢびぴぃ"];
-const uks = [..."うくすつぬふむゆるぐずづぶぷぅっ"];
+const uks = [..."うくすつぬふむゆるぐずづぶぷぅっゅ"];
 const eks = [..."えけせてねへめれげぜでべぺぇ"];
 const oks = [..."おこそとのほもよろをごぞどぼぽぉょ"];
 
@@ -430,6 +430,11 @@ app.get("/dict", (req, res) => {
     return res.send(content);
 })
 
+app.get("/all", (req, res) => {
+    const result = allWords.map(word => `"${word}"`).join(", ");
+    return res.send(result);
+});
+
 // app.get("/status", (req, res) => {
 //     let content = "<html><body><h1>Server [" + state.gameServerStartAt + "]</h1><hr>";
 //     content += `TOKEN:${JSON.stringify([...state.tokens.keys()])}<hr>ROOM:`;
@@ -533,9 +538,10 @@ function CPUresponse(history) {
     let word = history.at(-1);
     const normalized = wordNormalize(word);
     const candidates = wordsDict[normalized.nextFirstChar];
+    const filtered = candidates?.filter((w) => !history.includes(w))
     let result;
     let attempt = 0;
-    while (!result || result.at(-1) == "ん" || history.includes(result)) {
+    while (!result || result.at(-1) == "ん") {
         if (attempt > 20) {
             result = false;
             break;
@@ -544,7 +550,7 @@ function CPUresponse(history) {
             result = false;
             break;
         }
-        result = utils.choice(candidates);
+        result = utils.choice(filtered);
         attempt++;
     }
     return result;
@@ -559,12 +565,17 @@ function battle() {
         history.push(result);
         loop++;
     }
-    console.log(history.join("→"), loop, "回");
+    // console.log(history.join("→"), loop, "回");
     return {
         loop,
         history
     };
 }
+
+app.get("/auto", (req, res) => {
+    const result = battle();
+    return res.render("auto", result);
+})
 
 app.post("/cpu", (req, res) => {
     const gameData = {
